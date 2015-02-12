@@ -5,16 +5,12 @@ node_modules/
 platforms/
 plugins/
 
-.DS_Store
-node_modules
 *.sw[mnpcod]
-*.log
 *.tmp
 *.tmp.*
 log.txt
 example/cordova/iOS/www/js/framework
 
-example/cordova/iOS/www/js/framework
 .sass-cache/
 framework.sublime-project
 
