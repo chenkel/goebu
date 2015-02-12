@@ -4,21 +4,21 @@
   "description": "Collective intelligence web tool.",
   "main": "",
   "dependencies": {
-    "express": "*",
     "body-parser": "*",
-    "mongoose": "*",
-    "cors": "*"
+    "cors": "*",
+    "express": "*",
+    "mysql": "^2.5.4",
+    "sequelize": "^2.0.2"
   },
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "https://git"
   },
   "keywords": [
-    "Web",
-    "Tool"
+    "Goettingen",
+    "Bus"
   ],
-  "author": "Dan Sheikh",
+  "author": "Christopher Henkel",
   "license": ""
 }
