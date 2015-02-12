@@ -1,0 +1,24 @@
+{
+  "name": "goebu-server",
+  "version": "0.0.1",
+  "description": "Collective intelligence web tool.",
+  "main": "",
+  "dependencies": {
+    "express": "*",
+    "body-parser": "*",
+    "mongoose": "*",
+    "cors": "*"
+  },
+  "devDependencies": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git"
+  },
+  "keywords": [
+    "Web",
+    "Tool"
+  ],
+  "author": "Dan Sheikh",
+  "license": ""
+}
