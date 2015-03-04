@@ -1,0 +1,22 @@
+<ion-view view-title={{h.title}} ng-controller="HaltestellenCtrl as h">
+    <ion-content scroll="false">
+        <map id="map" center="[51.5327604, 9.9352051]"
+             data-tap-disabled="true"
+             street-view-control="false"
+             zoom-control="true"
+             zoom-control-options="{style:'SMALL', position:'RIGHT_BOTTOM'}">
+            <marker
+                    position="{{marker.stop_lat}},{{marker.stop_lon}}"
+                    title="{{$index+1}}.{{marker.stop_name}}"
+                    icon="img/helipad.png"
+                    draggable="false"
+                    visible="true"
+                    on-click="h.markerClicked({{$index}})"
+                    ng-repeat="marker in h.markers track by $index">
+            </marker>
+        </map>
+    </ion-content>
+    <ion-footer-bar class="bar bar-footer bar-balanced bar-dark">
+        <div class="title">{{h.chosenMarker}}</div>
+    </ion-footer-bar>
+</ion-view>

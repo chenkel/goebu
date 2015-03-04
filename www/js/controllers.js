@@ -1,69 +1,35 @@
-angular.module('starter.controllers', [])
+angular.module('starter.controllers', ['ngMap'])
 
-    .controller('AppCtrl', function ($scope, $ionicModal, $timeout) {
+    .controller('AppCtrl', function () {
 
-        // Form data for the login modal
-        $scope.loginData = {};
+    })
 
-        // Create the login modal that we will use later
-        $ionicModal.fromTemplateUrl('templates/login.html', {
-            scope: $scope
-        }).then(function (modal) {
-            $scope.modal = modal;
+    .controller('HaltestellenCtrl', function ($scope, $ionicLoading, $compile, $http, $stateParams) {
+        var self = this;
+
+        var buslinienId = $stateParams.buslinienId;
+        var url = 'http://goebu.christopherhenkel.de:3000/api/stops/goevb/' + buslinienId + '/0';
+        self.title = 'Haltestellen der Linie ' + buslinienId;
+
+        if (buslinienId == null) {
+            self.title = 'Alle Haltestellen';
+            url = 'http://goebu.christopherhenkel.de:3000/api/stopsNearby/51.5327604/9.9352051/10';
+        }
+
+        self.chosenMarker = 'Wählen Sie eine Zielhaltestelle';
+        self.markers = [];
+
+        $scope.$on('mapInitialized', function (event, map) {
+            $http.get(url).success(function (data) {
+                if (data != null) {
+                    self.markers = data[0].stops;
+                } else {
+                    self.markers = [];
+                }
+            });
         });
 
-        // Triggered in the login modal to close it
-        $scope.closeLogin = function () {
-            $scope.modal.hide();
+        this.markerClicked = function (ev, index) {
+            self.chosenMarker = self.markers[index].stop_name;
         };
-
-        // Open the login modal
-        $scope.login = function () {
-            $scope.modal.show();
-        };
-
-        // Perform the login action when the user submits the login form
-        $scope.doLogin = function () {
-            console.log('Doing login', $scope.loginData);
-
-            // Simulate a login delay. Remove this and replace with your login
-            // code if using a login system
-            $timeout(function () {
-                $scope.closeLogin();
-            }, 1000);
-        };
-    })
-
-    .controller('PlaylistsCtrl', function ($scope) {
-        $scope.playlists = [
-            {title: 'Reggae', id: 1},
-            {title: 'Chill', id: 2},
-            {title: 'Dubstep', id: 3},
-            {title: 'Indie', id: 4},
-            {title: 'Rap', id: 5},
-            {title: 'Cowbell', id: 6}
-        ];
-    })
-
-    .controller('PlaylistCtrl', function ($scope, $stateParams) {
-    })
-
-    .controller('MyCtrl', function ($cordovaStatusbar) {
-        $cordovaStatusbar.overlaysWebView(false);
-
-        // styles: Default : 0, LightContent: 1, BlackTranslucent: 2, BlackOpaque: 3
-        $cordovaStatusbar.style(2);
-
-        // supported names: black, darkGray, lightGray, white, gray, red, green,
-        // blue, cyan, yellow, magenta, orange, purple, brown
-        $cordovaStatusbar.styleColor('black');
-
-        $cordovaStatusbar.styleHex('#000');
-
-        $cordovaStatusbar.hide();
-
-        $cordovaStatusbar.show();
-
-        var isVisible = $cordovaStatusbar.isVisible();
-
     });
