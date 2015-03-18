@@ -3,6 +3,9 @@ GoogleMap AngularJS Directive
 
 [![Build Status](https://travis-ci.org/allenhwkim/angularjs-google-maps.png?branch=master)](https://travis-ci.org/allenhwkim/angularjs-google-maps)
 
+**NOTE: 1.4.0 is released.**
+  * support lazy loading of maps js, which does not require to `http://maps.google.com/maps/api/js`
+ 
 **NOTE: 1.2.0 is released.**
   * events with `controller as` syntax, thanks to Simon
  
@@ -73,6 +76,14 @@ Instances:
   * `$scope.map.markers`
   * `$scope.map.shapes`
   * etc
+
+Lazy Loading
+------------
+  Simply wrap the map tag with `map-lazy-load="http://maps.google.com/maps/api/js"`.
+
+    <div map-lazy-load="http://maps.google.com/maps/api/js">
+      <map center="41,-87" zoom="3"></map>
+    </div>
 
 Directives
 ----------
@@ -250,6 +261,9 @@ Advanced Examples
 - [Marker Clusterer](https://rawgit.com/allenhwkim/angularjs-google-maps/master/testapp/marker-clusterer.html)
 - [Starbucks World Wide](https://rawgit.com/allenhwkim/angularjs-google-maps/master/testapp/map_app.html)
 
+Contributors
+==============
+[Fangmingdu] (https://github.com/Fangmingdu) - Drawing Manager
 
 license
 =======

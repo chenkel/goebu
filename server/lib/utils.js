@@ -32,14 +32,23 @@ module.exports = {
         //check if seconds are already in HH:MM:SS format
 
         //if (seconds.match(/\d+:\d+:\d+/)[0]) {
-        if (seconds.match(/\d+:\d+/)[0]) {
-            return seconds;
+        if (typeof seconds !== "undefined") {
+
+            if (typeof seconds !== 'number') {
+                if (seconds.match(/\d+:\d+/) || seconds.match(/\d+:\d+:\d+/)) {
+                    return seconds;
+                } else {
+                    return null;
+                }
+            } else {
+                var hour = Math.floor(seconds / (60 * 60))
+                    , minute = Math.floor((seconds - hour * (60 * 60)) / 60)
+                    , second = seconds - hour * (60 * 60) - minute * 60;
+                return ((hour < 10) ? '' + '0' + hour : hour) + ':' + ((minute < 10) ? '' + '0' + minute : minute) + ':' + ((second < 10) ? '' + '0' + second : second);
+
+            }
         }
 
-        var hour = Math.floor(seconds / (60 * 60))
-            , minute = Math.floor((seconds - hour * (60 * 60)) / 60)
-            , second = seconds - hour * (60 * 60) - minute * 60;
-        return ((hour < 10) ? '' + '0' + hour : hour) + ':' + ((minute < 10) ? '' + '0' + minute : minute) + ':' + ((second < 10) ? '' + '0' + second : second);
     }
 
 };

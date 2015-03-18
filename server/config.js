@@ -15,7 +15,8 @@ module.exports = {
             agency_key: 'goevb',
             url: 'https://www.dropbox.com/s/ec8bgs52wckrsh0/latest.zip?dl=1'
         }
-    ]
+    ],
+    server_host: 'http://goebu.christopherhenkel.de:3000/'
 };
     
 

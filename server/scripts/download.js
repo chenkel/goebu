@@ -20,7 +20,7 @@ if (invocation === 'direct') {
     } catch (e) {
         handleError(new Error('Cannot find config.js'));
     }
-    if(!config.agencies){
+    if (!config.agencies) {
         handleError(new Error('No agency_key specified in config.js\nTry adding \'capital-metro\' to the agencies in config.js to load transit data'));
         process.exit();
     }
@@ -83,19 +83,20 @@ var GTFSFiles = [
 
 // wrap original procedure in a function and preserve original indentation for easy diffs
 // reformat indentation if-and-after pull-request is accepted
-function main(config, callback){
+function main(config, callback) {
 
-    var log = (config.verbose === false) ? function(){} : console.log;
+    var log = (config.verbose === false) ? function () {
+    } : console.log;
 
 //open database and create queue for agency list
-    Db.connect(config.mongo_url, {w: 1}, function(err, db) {
+    Db.connect(config.mongo_url, {w: 1}, function (err, db) {
         q = async.queue(downloadGTFS, 1);
         //loop through all agencies specified
         //If the agency_key is a URL, download that GTFS file, otherwise treat
         //it as an agency_key and get file from gtfs-data-exchange.com
-        config.agencies.forEach(function(item) {
+        config.agencies.forEach(function (item) {
             var agency;
-            if(typeof(item) == 'string') {
+            if (typeof(item) == 'string') {
                 agency = {
                     agency_key: item
                     , agency_url: 'http://www.gtfs-data-exchange.com/agency/' + item + '/latest.zip'
@@ -107,14 +108,14 @@ function main(config, callback){
                 }
             }
 
-            if(!agency.agency_key || !agency.agency_url) {
+            if (!agency.agency_key || !agency.agency_url) {
                 handleError(new Error('No URL or Agency Key provided.'));
             }
 
             q.push(agency);
         });
 
-        q.drain = function(e) {
+        q.drain = function (e) {
             log('All agencies completed (' + config.agencies.length + ' total)');
             callback();
         };
@@ -134,21 +135,21 @@ function main(config, callback){
                 importFiles,
                 postProcess,
                 cleanupFiles
-            ], function(e, results){
-                log( e || agency_key + ': Completed');
+            ], function (e, results) {
+                log(e || agency_key + ': Completed');
                 cb();
             });
 
 
             function cleanupFiles(cb) {
                 //remove old downloaded file
-                exec( (process.platform.match(/^win/) ? 'rmdir /Q /S ' : 'rm -rf ') + downloadDir, function(e, stdout, stderr) {
+                exec((process.platform.match(/^win/) ? 'rmdir /Q /S ' : 'rm -rf ') + downloadDir, function (e, stdout, stderr) {
                     try {
                         //create downloads directory
                         fs.mkdirSync(downloadDir);
                         cb();
-                    } catch(e) {
-                        if(e.code == 'EEXIST') {
+                    } catch (e) {
+                        if (e.code == 'EEXIST') {
                             cb();
                         } else {
                             handleError(e);
@@ -165,21 +166,23 @@ function main(config, callback){
                 if (file_protocol === 'http:' || file_protocol === 'https:') {
                     request(agency_url, processFile).pipe(fs.createWriteStream(downloadDir + '/latest.zip'));
 
-                    function processFile(e, response, body){
-                        if(response && response.statusCode != 200){ cb(new Error('Couldn\'t download files')); }
+                    function processFile(e, response, body) {
+                        if (response && response.statusCode != 200) {
+                            cb(new Error('Couldn\'t download files'));
+                        }
                         log(agency_key + ': Download successful');
 
                         fs.createReadStream(downloadDir + '/latest.zip')
-                            .pipe(unzip.Extract({ path: downloadDir }).on('close', cb))
+                            .pipe(unzip.Extract({path: downloadDir}).on('close', cb))
                             .on('error', handleError);
                     }
                 } else {
                     if (!fs.existsSync(agency_url)) return cb(new Error('File does not exists'));
                     fs.createReadStream(agency_url)
                         .pipe(fs.createWriteStream(downloadDir + '/latest.zip'))
-                        .on('close', function(){
+                        .on('close', function () {
                             fs.createReadStream(downloadDir + '/latest.zip')
-                                .pipe(unzip.Extract({ path: downloadDir }).on('close', cb))
+                                .pipe(unzip.Extract({path: downloadDir}).on('close', cb))
                                 .on('error', handleError);
                         })
                         .on('error', handleError);
@@ -189,11 +192,11 @@ function main(config, callback){
 
             function removeDatabase(cb) {
                 //remove old db records based on agency_key
-                async.forEach(GTFSFiles, function(GTFSFile, cb){
-                    db.collection(GTFSFile.collection, function(e, collection){
-                        collection.remove({ agency_key: agency_key }, cb);
+                async.forEach(GTFSFiles, function (GTFSFile, cb) {
+                    db.collection(GTFSFile.collection, function (e, collection) {
+                        collection.remove({agency_key: agency_key}, cb);
                     });
-                }, function(e){
+                }, function (e) {
                     cb(e, 'remove');
                 });
             }
@@ -201,19 +204,19 @@ function main(config, callback){
 
             function importFiles(cb) {
                 //Loop through each file and add agency_key
-                async.forEachSeries(GTFSFiles, function(GTFSFile, cb){
-                    if(GTFSFile){
+                async.forEachSeries(GTFSFiles, function (GTFSFile, cb) {
+                    if (GTFSFile) {
                         var filepath = path.join(downloadDir, GTFSFile.fileNameBase + '.txt');
                         if (!fs.existsSync(filepath)) return cb();
                         log(agency_key + ': ' + GTFSFile.fileNameBase + ' Importing data');
-                        db.collection(GTFSFile.collection, function(e, collection){
+                        db.collection(GTFSFile.collection, function (e, collection) {
                             var input = fs.createReadStream(filepath);
                             var parser = csv.parse({columns: true});
-                            parser.on('readable', function(){
-                                while(line = parser.read()){
+                            parser.on('readable', function () {
+                                while (line = parser.read()) {
                                     //remove null values
-                                    for(var key in line){
-                                        if(line[key] === null){
+                                    for (var key in line) {
+                                        if (line[key] === null) {
                                             delete line[key];
                                         }
                                     }
@@ -222,56 +225,61 @@ function main(config, callback){
                                     line.agency_key = agency_key;
 
                                     //convert fields that should be int
-                                    if(line.stop_sequence){
+                                    if (line.stop_sequence) {
                                         line.stop_sequence = parseInt(line.stop_sequence, 10);
                                     }
-                                    if(line.direction_id){
+                                    if (line.direction_id) {
                                         line.direction_id = parseInt(line.direction_id, 10);
                                     }
-                                    if(line.shape_pt_sequence){
+                                    if (line.shape_pt_sequence) {
                                         line.shape_pt_sequence = parseInt(line.shape_pt_sequence, 10);
                                     }
 
                                     //make lat/lon array for stops
-                                    if(line.stop_lat && line.stop_lon){
+                                    if (line.stop_lat && line.stop_lon) {
                                         line.loc = [parseFloat(line.stop_lon), parseFloat(line.stop_lat)];
 
                                         //Calulate agency bounds
-                                        if(agency_bounds.sw[0] > line.loc[0] || !agency_bounds.sw[0]){
+                                        if (agency_bounds.sw[0] > line.loc[0] || !agency_bounds.sw[0]) {
                                             agency_bounds.sw[0] = line.loc[0];
                                         }
-                                        if(agency_bounds.ne[0] < line.loc[0] || !agency_bounds.ne[0]){
+                                        if (agency_bounds.ne[0] < line.loc[0] || !agency_bounds.ne[0]) {
                                             agency_bounds.ne[0] = line.loc[0];
                                         }
-                                        if(agency_bounds.sw[1] > line.loc[1] || !agency_bounds.sw[1]){
+                                        if (agency_bounds.sw[1] > line.loc[1] || !agency_bounds.sw[1]) {
                                             agency_bounds.sw[1] = line.loc[1];
                                         }
-                                        if(agency_bounds.ne[1] < line.loc[1] || !agency_bounds.ne[1]){
+                                        if (agency_bounds.ne[1] < line.loc[1] || !agency_bounds.ne[1]) {
                                             agency_bounds.ne[1] = line.loc[1];
                                         }
                                     }
 
                                     //make lat/long for shapes
-                                    if(line.shape_pt_lat && line.shape_pt_lon){
+                                    if (line.shape_pt_lat && line.shape_pt_lon) {
                                         line.shape_pt_lon = parseFloat(line.shape_pt_lon);
                                         line.shape_pt_lat = parseFloat(line.shape_pt_lat);
                                         line.loc = [line.shape_pt_lon, line.shape_pt_lat];
                                     }
 
+                                    line.departure_time = convertToSeconds(line.departure_time);
+                                    line.arrival_time = convertToSeconds(line.arrival_time);
+
                                     //insert into db
-                                    collection.insert(line, function(e, inserted) {
-                                        if(e) { handleError(e); }
+                                    collection.insert(line, function (e, inserted) {
+                                        if (e) {
+                                            handleError(e);
+                                        }
                                     });
                                 }
                             });
-                            parser.on('end', function(count){
+                            parser.on('end', function (count) {
                                 cb();
                             });
                             parser.on('error', handleError);
                             input.pipe(parser);
                         });
                     }
-                }, function(e){
+                }, function (e) {
                     cb(e, 'import');
                 });
             }
@@ -284,7 +292,7 @@ function main(config, callback){
                     agencyCenter
                     , longestTrip
                     , updatedDate
-                ], function(e, results){
+                ], function (e, results) {
                     cb();
                 });
             }
@@ -292,12 +300,17 @@ function main(config, callback){
 
             function agencyCenter(cb) {
                 var agency_center = [
-                    (agency_bounds.ne[0] - agency_bounds.sw[0])/2 + agency_bounds.sw[0]
-                    , (agency_bounds.ne[1] - agency_bounds.sw[1])/2 + agency_bounds.sw[1]
+                    (agency_bounds.ne[0] - agency_bounds.sw[0]) / 2 + agency_bounds.sw[0]
+                    , (agency_bounds.ne[1] - agency_bounds.sw[1]) / 2 + agency_bounds.sw[1]
                 ];
 
                 db.collection('agencies')
-                    .update({agency_key: agency_key}, {$set: {agency_bounds: agency_bounds, agency_center: agency_center}}, cb);
+                    .update({agency_key: agency_key}, {
+                        $set: {
+                            agency_bounds: agency_bounds,
+                            agency_center: agency_center
+                        }
+                    }, cb);
             }
 
 
@@ -323,6 +336,25 @@ function main(config, callback){
     });
 }
 
+function convertToSeconds(formattedTime) {
+    if (formattedTime) {
+
+        var timeParts = formattedTime.split(':');
+        if (timeParts.length === 2) {
+            return parseInt(timeParts[0], 10) * 60 * 60 + parseInt(timeParts[1], 10) * 60;
+
+        } else if (timeParts.length === 3) {
+            return parseInt(timeParts[0], 10) * 60 * 60 + parseInt(timeParts[1], 10) * 60 + parseInt(timeParts[2], 10);
+        }
+        else {
+            console.log('Format not correct. Expected HH:MM');
+            return null;
+        }
+
+    }
+}
+
+
 function handleError(e) {
     console.error(e || 'Unknown Error');
     process.exit(1);
@@ -330,7 +362,7 @@ function handleError(e) {
 
 // allow script to be called directly from commandline or required (for testable code)
 if (invocation === 'direct') {
-    main(config, function(){
+    main(config, function () {
         process.exit();
     });
 } else {

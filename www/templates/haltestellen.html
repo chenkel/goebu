@@ -1,13 +1,23 @@
-<ion-view view-title={{h.title}} ng-controller="HaltestellenCtrl as h">
+<ion-view title={{h.title}} ng-controller="HaltestellenCtrl as h">
+    <ion-nav-buttons side="right">
+        <button class="button button-clear button-icon icon ion-merge"
+                ng-show="h.stop.selected.times"
+                ng-click=h.addBusMarker()>
+
+        </button>
+    </ion-nav-buttons>
+
     <ion-content scroll="false">
+
         <map id="map" center="[51.5327604, 9.9352051]"
              data-tap-disabled="true"
              street-view-control="false"
+             map-type-control="false"
              zoom-control="true"
              zoom-control-options="{style:'SMALL', position:'RIGHT_BOTTOM'}">
             <marker
                     position="{{marker.stop_lat}},{{marker.stop_lon}}"
-                    title="{{$index+1}}.{{marker.stop_name}}"
+                    title="{{marker.stop_name}}"
                     icon="img/helipad.png"
                     draggable="false"
                     visible="true"
@@ -17,6 +27,10 @@
         </map>
     </ion-content>
     <ion-footer-bar class="bar bar-footer bar-balanced bar-dark">
-        <div class="title">{{h.chosenMarker}}</div>
+        <div class="title">{{h.stop.selected.stop_name}}</div>
+        <a class="button button-icon icon ion-clock"
+           ng-show="h.stop.selected.times"
+           ng-click=h.openModal()>
+        </a>
     </ion-footer-bar>
 </ion-view>

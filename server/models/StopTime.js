@@ -3,8 +3,8 @@ var mongoose = require('mongoose')
     , StopTime = mongoose.model('StopTime', new mongoose.Schema({
         agency_key: {type: String, index: true}
         , trip_id: {type: String, index: true}
-        , arrival_time: {type: String, get: utils.secondsToTime, set: utils.timeToSeconds}
-        , departure_time: {type: String, index: true, get: utils.secondsToTime, set: utils.timeToSeconds}
+        , arrival_time: {type: Number}
+        , departure_time: {type: Number, index: true}
         , stop_id: {type: String, index: true}
         , stop_sequence: {type: Number, index: true}
         , stop_headsign: {type: String}

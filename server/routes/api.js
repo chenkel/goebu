@@ -85,6 +85,19 @@ router.get('/shapes/:agency/:route_id', function (req, res, next) {
     });
 });
 
+router.get('/shapes/:agency/stop/:stop_id/direction/:direction_id', function (req, res, next) {
+    var agency_key = req.params.agency,
+        stop_id = req.params.stop_id,
+        direction_id = parseInt(req.params.direction_id, 10);
+    gtfs.getAllLiveBusShapes(agency_key, stop_id, direction_id, function (e, data) {
+        if (e) {
+            debug(e, "shapes - agency error");
+            return next(e);
+        }
+        res.send(data || {error: 'No live bus shapes for agency combination.'});
+    });
+});
+
 
 /* Stoplist */
 router.get('/stops/:agency/:route_id/:direction_id', function (req, res, next) {
@@ -111,7 +124,7 @@ router.get('/stops/:agency/:route_id', function (req, res, next) {
 router.get('/stopsNearby/:lat/:lon/:radiusInMiles', function (req, res, next) {
     var lat = req.params.lat
         , lon = req.params.lon;
-    radius = req.params.radiusInMiles;
+    var radius = req.params.radiusInMiles;
     gtfs.getStopsByDistance(lat, lon, radius, function (e, data) {
         if (e) return next(e);
         res.send(data || {error: 'No stops within radius of ' + radius + ' miles'});
@@ -134,45 +147,44 @@ router.get('/stopsNearby/:lat/:lon', function (req, res, next) {
 router.get('/times/:agency/stop/:stop_id', function (req, res, next) {
     var agency_key = req.params.agency,
         stop_id = req.params.stop_id;
-    gtfs.getTimesByStopForAll(agency_key, stop_id, function (e, data) {
-        //console.log(data, "getTimesByStopForAll - data");
-        if (e) return next(e);
-        res.send(data || {error: 'No times for agency/route/stop combination.'});
-    });
+
+    gtfs.getTimesByStopForAllRoutes(agency_key, stop_id, return_times_cb(res, next));
 });
 
 router.get('/times/:agency/stop/:stop_id/direction/:direction_id', function (req, res, next) {
     var agency_key = req.params.agency,
         stop_id = req.params.stop_id,
         direction_id = parseInt(req.params.direction_id, 10);
-    console.log(direction_id, "direction_id");
-    gtfs.getTimesByStopForAll(agency_key, stop_id, direction_id, function (e, data) {
-        //console.log(data, "getTimesByStopForAll - data");
-        if (e) return next(e);
-        res.send(data || {error: 'No times for agency/route/stop combination.'});
-    });
+    gtfs.getTimesByStopForAllRoutes(agency_key, stop_id, direction_id, return_times_cb(res, next));
 });
 
-router.get('/times/:agency/:route_id/:stop_id', function (req, res, next) {
+router.get('/times/:agency/route/:route_id/stop/:stop_id', function (req, res, next) {
     var agency_key = req.params.agency,
         route_id = req.params.route_id,
         stop_id = req.params.stop_id;
-    gtfs.getTimesByStop(agency_key, route_id, stop_id, function (e, data) {
-        if (e) return next(e);
-        res.send(data || {error: 'No times for agency/route/stop combination.'});
-    });
+    if (route_id == '0') {
+        gtfs.getTimesByStopForAllRoutes(agency_key, stop_id, -1, return_times_cb(res, next));
+    } else {
+        gtfs.getTimesByStop(agency_key, route_id, stop_id, -1, return_times_cb(res, next));
+    }
 });
 
-router.get('/times/:agency/:route_id/:stop_id/:direction_id', function (req, res, next) {
+router.get('/times/:agency/route/:route_id/stop/:stop_id/direction/:direction_id', function (req, res, next) {
     var agency_key = req.params.agency,
         route_id = req.params.route_id,
         stop_id = req.params.stop_id,
         direction_id = parseInt(req.params.direction_id, 10);
-    gtfs.getTimesByStop(agency_key, route_id, stop_id, direction_id, function (e, data) {
-        if (e) return next(e);
-        res.send(data || {error: 'No times for agency/route/stop/direction combination.'});
-    });
+    gtfs.getTimesByStop(agency_key, route_id, stop_id, direction_id, return_times_cb(res, next));
 });
 
+var return_times_cb = function (res, next) {
+    return function (e, data) {
+        if (e) {
+            debug(e, "return_times_cb - e:");
+            return next(e);
+        }
+        res.send(data || {error: 'No times for agency/route/stop combination.'});
+    };
+};
 
 module.exports = router;
