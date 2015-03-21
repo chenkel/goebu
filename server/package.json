@@ -14,7 +14,7 @@
     "express": "*",
     "jade": "*",
     "mongodb": "*",
-    "mongoose": "*",
+    "mongoose": "^3.8.25",
     "morgan": "*",
     "request": "*",
     "serve-favicon": "*",

@@ -6,7 +6,7 @@ var request = require('request')
     , async = require('async')
     , unzip = require('unzip2')
     , downloadDir = 'downloads'
-    , Db = require('mongodb').Db
+    , Db = require('mongodb').MongoClient
     , q;
 
 

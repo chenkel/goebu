@@ -1,11 +1,4 @@
-<ion-view title={{h.title}} ng-controller="HaltestellenCtrl as h">
-    <ion-nav-buttons side="right">
-        <button class="button button-clear button-icon icon ion-merge"
-                ng-show="h.stop.selected.times"
-                ng-click=h.addBusMarker()>
-
-        </button>
-    </ion-nav-buttons>
+<ion-view title={{title}} ng-controller="HaltestellenCtrl">
 
     <ion-content scroll="false">
 
@@ -15,22 +8,18 @@
              map-type-control="false"
              zoom-control="true"
              zoom-control-options="{style:'SMALL', position:'RIGHT_BOTTOM'}">
-            <marker
-                    position="{{marker.stop_lat}},{{marker.stop_lon}}"
-                    title="{{marker.stop_name}}"
-                    icon="img/helipad.png"
-                    draggable="false"
-                    visible="true"
-                    on-click="h.markerClicked({{$index}})"
-                    ng-repeat="marker in h.markers track by $index">
-            </marker>
         </map>
     </ion-content>
-    <ion-footer-bar class="bar bar-footer bar-balanced bar-dark">
-        <div class="title">{{h.stop.selected.stop_name}}</div>
-        <a class="button button-icon icon ion-clock"
-           ng-show="h.stop.selected.times"
-           ng-click=h.openModal()>
+    <ion-footer-bar class = "bar bar-footer bar-balanced bar-dark">
+        <div class = "title"
+             ng-hide = "selected_stop.stop_name">
+            Wählen Sie Ihre Zielhaltestelle</div>
+        <div class = "title"
+             ng-show = "selected_stop.stop_name">
+            {{selected_stop.stop_name}}</div>
+        <a class = "button button-icon icon ion-clock"
+           ng-show = selected_stop.times
+           ng-click = openModal()>
         </a>
     </ion-footer-bar>
 </ion-view>

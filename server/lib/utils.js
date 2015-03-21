@@ -44,8 +44,13 @@ module.exports = {
                 var hour = Math.floor(seconds / (60 * 60))
                     , minute = Math.floor((seconds - hour * (60 * 60)) / 60)
                     , second = seconds - hour * (60 * 60) - minute * 60;
-                return ((hour < 10) ? '' + '0' + hour : hour) + ':' + ((minute < 10) ? '' + '0' + minute : minute) + ':' + ((second < 10) ? '' + '0' + second : second);
+                //return ((hour < 10) ? '' + '0' + hour : hour) + ':' +
+                //    ((minute < 10) ? '' + '0' + minute : minute) + ':' +
+                //    ((second < 10) ? '' + '0' + second : second);
 
+
+                return ((hour < 10) ? '' + '0' + hour : hour) + ':' +
+                    ((minute < 10) ? '' + '0' + minute : minute);
             }
         }
 

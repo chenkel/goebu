@@ -5,6 +5,7 @@ var mongoose = require('mongoose')
         , stop_code: {type: String}
         , stop_name: {type: String}
         , stop_desc: {type: String}
+        , icon: {type: String}
         , stop_lat: {type: Number}
         , stop_lon: {type: Number}
         , loc: {type: Array, index: '2d'}

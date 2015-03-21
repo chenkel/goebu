@@ -1,10 +1,10 @@
-var async = require('async')
-    , mongoose = require('mongoose')
+var async = require('async'),
+    mongoose = require('mongoose')
     , _ = require('underscore')
     , utils = require('./utils')
     , debug = require('debug')('goebu:gtfs');
 
-var timeCheat = 43850;
+var timeCheat = -1400;
 
 
 //load config.js
@@ -134,8 +134,9 @@ module.exports = {
                 if (direction_id) {
                     results = stops[direction_id] || [];
                 } else {
-                    _.each(stops, function (stops, direction_id) {
-                        results.push({direction_id: direction_id, stops: stops || []});
+                    _.each(stops, function (stop, direction_id) {
+                        console.log(stop, "stop");
+                        results.push({direction_id: direction_id, stops: stop || []});
                     });
                 }
                 cb(e, results);
@@ -190,6 +191,8 @@ module.exports = {
             stop_id: stop_id,
             direction_id: direction_id
         };
+
+        debug(stop_id, "stop_id");
 
         var service_ids = []
             , trip_ids = []
@@ -284,6 +287,7 @@ module.exports = {
             agency_key: agency_key,
             stop_id: stop_id
         };
+        debug(stop_id, "stop_id");
 
         var service_ids = []
             , trip_ids = []
@@ -314,8 +318,7 @@ module.exports = {
         }
 
         var fields = {
-            agency_key: agency_key,
-            stop_id: stop_id
+            agency_key: agency_key
         };
 
         var service_ids = []
@@ -332,16 +335,16 @@ module.exports = {
             async.apply(checkFields, fields),
             async.apply(findServices, agency_key, service_ids),
             async.apply(findTrips, agency_key, null, null, service_ids, trip_ids),
-            async.apply(findTimeScheduleForStop, agency_key, stop_id, trip_ids, future_times, 1),
+            async.apply(findTimeScheduleForStop, agency_key, -1, trip_ids, future_times, 1),
             async.apply(findDistinctSequences, distinct_sequences, future_times),
-            async.apply(findTimeScheduleForStop, agency_key, stop_id, trip_ids, past_times, -1),
+            async.apply(findTimeScheduleForStop, agency_key, -1, trip_ids, past_times, -1),
             async.apply(constructLiveSequences, past_times, distinct_sequences, stop_ids, live_sequences),
             async.apply(lookupStopIds, stop_ids, resolved_stops),
             async.apply(assignResolvedStopsToLiveSequence, resolved_stops, live_sequences),
             async.apply(calculatePositionForLiveSequence, live_sequences)
 
         ], function (e, results) {
-            debug(results, "results");
+
             if (e) {
                 debug(e, "getTimesByStopForAllRoutes - error");
                 cb(e, null);
@@ -478,17 +481,22 @@ function findTimeScheduleForStop(agency_key, stop_id, trip_ids, times, time_hori
     var numOfTimes = 1000;
     var query = {
         agency_key: agency_key
-        //, stop_id: stop_id
     };
 
-    var seconds_before = 1200; // 20 * 60 seconds = 20 mins
-    var seconds_after = 1200;
+    if (stop_id > 0) {
+        query.stop_id = stop_id;
+    }
+
+    var seconds_before = 86400; // 20 * 60 seconds = 20 mins
+    var seconds_after = 86400;
 
     if (typeof time_horizon !== 'undefined') {
         if (time_horizon < 0) {
+            seconds_before = 86400;
             seconds_after = 0;
         } else if (time_horizon > 0) {
             seconds_before = 0;
+            seconds_after = 86400;
         }
     }
 
@@ -534,7 +542,7 @@ function getStops(agency_key, direction_ids, stop_ids, stops, cb) {
                 function (stop_id, cb) {
                     Stop.findOne()
                         .where({agency_key: agency_key, stop_id: stop_id})
-                        .select('stop_id stop_name stop_lat stop_lon -_id')
+                        .select('stop_id stop_name icon stop_lat stop_lon -_id')
                         .exec(function (e, stop) {
                             if (e) {
                                 debug(e, "getStops - error");
@@ -705,8 +713,7 @@ function findDistinctSequences(distinct_sequences, times, cb) {
     distinct_sequences.push(times[0]);
 
     var slots_ahead = 7;
-    var skip_sequence = 9;
-    var tmp_sequence_diff;
+
 
     var loops = Math.min(slots_ahead, times.length - 1);
 
@@ -714,47 +721,37 @@ function findDistinctSequences(distinct_sequences, times, cb) {
         var distinct_flag = true;
         for (var j in distinct_sequences) {
             if (distinct_sequences.hasOwnProperty(j)) {
-                tmp_sequence_diff = Math.abs(times[i].sequence - distinct_sequences[j].sequence);
-                if (tmp_sequence_diff < skip_sequence) {
+                if (isDistinctSequencePart(times[i], distinct_sequences[j])) {
                     distinct_flag = false;
+                } else {
+                    console.log(times[i].sequence, "times[i].sequence");
+                    //console.log(tmp_sequence_diff, "tmp_sequence_diff");
                 }
             }
         }
         if (distinct_flag) {
             distinct_sequences.push(times[i]);
+            console.log(distinct_sequences, "distinct_sequences");
         }
     }
     cb(null, 'find distinct_sequences');
 }
 
-function lookupStopIds(stop_ids, resolved_stops, cb) {
-    Stop
-        .find()
-        .where('stop_id').in(stop_ids)
-        .select('stop_id stop_lat stop_lon -_id')
-        .exec(function (e, stops) {
-            if (e) {
-                debug(e, "getBusStopLatLon - error");
-                cb(err, 'lookupStopIds');
-            } else {
-                resolved_stops.push(stops);
-                cb(null, 'lookupStopIds');
-            }
-        });
+
+function isDistinctSequencePart(first, second) {
+    var skip_sequence = 10;
+    var tmp_sequence_diff = Math.abs(first.sequence - second.sequence);
+
+    return tmp_sequence_diff < skip_sequence;
 }
 
 function constructLiveSequences(past_times, distinct_sequences, stop_ids, live_sequences, cb) {
-    var skip_sequence = 10;
-    var tmp_sequence_diff;
-
     var nPast_times = past_times.length - 1;
 
     for (var j in distinct_sequences) {
         if (distinct_sequences.hasOwnProperty(j)) {
-            live_sequences.push({});
             for (var i = nPast_times; i >= 0; i--) {
-                tmp_sequence_diff = Math.abs(past_times[i].sequence - distinct_sequences[j].sequence);
-                if (tmp_sequence_diff < skip_sequence) {
+                if (isDistinctSequencePart(past_times[i], distinct_sequences[j])) {
                     live_sequences[j]['next'] = distinct_sequences[j];
                     stop_ids.push(distinct_sequences[j].stop_id);
                     live_sequences[j]['previous'] = past_times[i];
@@ -792,8 +789,8 @@ function assignResolvedStopsToLiveSequence(resolved_stops, live_sequences, cb) {
 }
 
 function calculatePositionForLiveSequence(live_sequence, cb) {
-    for (var i in live_sequence){
-        if (live_sequence.hasOwnProperty(i)){
+    for (var i in live_sequence) {
+        if (live_sequence.hasOwnProperty(i)) {
             var tGesamt = live_sequence[i]['next'].time - live_sequence[i]['previous'].time;
             //debug(live_sequence[i]['previous'].time, "live_sequence[i]['previous'].time");
             //debug(live_sequence[i]['next'].time, "live_sequence[i]['next'].time");
@@ -817,6 +814,22 @@ function calculatePositionForLiveSequence(live_sequence, cb) {
         }
     }
     cb(null, "calculatePositionForLiveSequence");
+}
+
+function lookupStopIds(stop_ids, resolved_stops, cb) {
+    Stop
+        .find()
+        .where('stop_id').in(stop_ids)
+        .select('stop_id stop_lat stop_lon -_id')
+        .exec(function (e, stops) {
+            if (e) {
+                debug(e, "getBusStopLatLon - error");
+                cb(err, 'lookupStopIds');
+            } else {
+                resolved_stops.push(stops);
+                cb(null, 'lookupStopIds');
+            }
+        });
 }
 
 function handleError(e) {

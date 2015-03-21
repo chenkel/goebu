@@ -4,16 +4,16 @@
     </ion-header-bar>
     <ion-content>
         <ul class="list">
-            <div class="item" ng-repeat="stopTime in h.stop.selected.times track by $index">
-                <div class="align-center">{{stopTime}}</div>
+            <div class="item" ng-repeat="stopTime in selected_stop.times track by $index">
+                <div class="align-center">{{stopTime.time_human}}</div>
             </div>
         </ul>
     </ion-content>
     <ion-footer-bar class="bar bar-footer bar-balanced bar-dark">
-        <h1 class="title">{{h.stop.selected.stop_name}}</h1>
+        <h1 class="title">{{selected_stop.stop_name}}</h1>
 
         <div class="buttons">
-            <button class="button button-icon ion-close" ng-click=h.closeModal()></button>
+            <button class="button button-icon ion-close" ng-click=closeModal()></button>
         </div>
     </ion-footer-bar>
 </ion-modal-view>
