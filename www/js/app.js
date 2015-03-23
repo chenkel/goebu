@@ -1,3 +1,5 @@
+"use strict";
+
 // Ionic Starter App
 
 // angular.module is a global place for creating, registering and retrieving Angular modules
@@ -32,15 +34,15 @@ angular.module('starter', ['ionic', 'starter.controllers', 'ngCordova'])
                 controller: 'AppCtrl'
             })
 
-            .state('app.haltestellen', {
-                url: "/haltestellen",
-                views: {
-                    'menuContent': {
-                        templateUrl: "templates/haltestellen.html",
-                        controller: 'HaltestellenCtrl'
-                    }
-                }
-            })
+            //.state('app.haltestellen', {
+            //    url: "/haltestellen",
+            //    views: {
+            //        'menuContent': {
+            //            templateUrl: "templates/haltestelle.html",
+            //            controller: 'HaltestelleCtrl'
+            //        }
+            //    }
+            //})
             .state('app.haltestelle', {
                 url: "/haltestelle/:buslinienId",
                 views: {

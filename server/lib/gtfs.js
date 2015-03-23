@@ -1,838 +1,809 @@
-var async = require('async'),
-    mongoose = require('mongoose')
-    , _ = require('underscore')
-    , utils = require('./utils')
-    , debug = require('debug')('goebu:gtfs');
+"use strict";
 
-var timeCheat = -1400;
+var async = require("async"),
+    mongoose = require("mongoose"),
+//_ = require("underscore"),
+    utils = require("./utils"),
+    debug = require("debug")("goebu:gtfs");
 
+var timeCheat = 26000;
+var dayCheat = null;
 
-//load config.js
-try {
-    var config = require('../config.js');
-} catch (e) {
-    handleError(new Error('Cannot find config.js'));
+function handleError(e) {
+    console.error(e || "Unknown Error");
+    process.exit(1);
 }
 
 var db = mongoose.connect(config.mongo_url);
 
-require('../models/Agency');
-require('../models/Calendar');
-require('../models/CalendarDate');
-require('../models/FareAttribute');
-require('../models/FareRule');
-require('../models/FeedInfo');
-require('../models/Frequencies');
-require('../models/Route');
-require('../models/Shape');
-require('../models/Stop');
-require('../models/StopTime');
-require('../models/Transfer');
-require('../models/Trip');
+require("../models/Agency");
+require("../models/Calendar");
+require("../models/CalendarDate");
+require("../models/FareAttribute");
+require("../models/FareRule");
+require("../models/FeedInfo");
+require("../models/Frequencies");
+require("../models/Route");
+require("../models/Shape");
+require("../models/Stop");
+require("../models/StopTime");
+require("../models/Transfer");
+require("../models/Trip");
 
-var Agency = db.model('Agency')
-    , Route = db.model('Route')
-    , Shape = db.model('Shape')
-    , Stop = db.model('Stop')
-    , StopTime = db.model('StopTime')
-    , Trip = db.model('Trip')
-    , Calendar = db.model('Calendar');
+var Agency = db.model("Agency"),
+    Route = db.model("Route"),
+    Stop = db.model("Stop"),
+    StopTime = db.model("StopTime"),
+    Trip = db.model("Trip"),
+    Calendar = db.model("Calendar");
 
+// TODO: checkFields deleted, fix that.
+
+/**
+ * errorResultCallback is a callback type and is displayed as a global symbol.
+ *
+ * @callback errorResultCallback - The callback that handles errors and responses.
+ * @param {Object} error - If an error occurred pass the err object here.
+ * @param {Object} result - Pass results back.
+ */
+
+/**
+ * findServices adds all service_ids available today to goebu_params and executes the callback
+ *
+ * @param {Object} goebu_params - option parameters for findServices
+ * optional:
+ * @param {string} [goebu_params.agency_key]
+ * @param {number[]} [goebu_params.service_ids]
+ *
+ * @return {number[]} [goebu_params.service_ids]
+ *
+ * @param {errorResultCallback} cb - callback
+ */
+function findServices(goebu_params, cb) {
+    if (!goebu_params.service_ids) {
+        goebu_params.service_ids = [];
+    }
+
+    var today = new Date();
+
+    var query = {},
+        todayFormatted = utils.formatDay(today);
+
+    //build query
+    if (goebu_params.agency_key) {
+        query.agency_key = goebu_params.agency_key;
+    }
+
+    if (typeof dayCheat !== 'undefined' && dayCheat !== null) {
+        log.warn("Applying day cheat");
+        log.info(dayCheat, "Day of the week");
+        query[dayCheat] = 1;
+    } else {
+        query[utils.getDayName(today).toLowerCase()] = 1;
+    }
+
+    Calendar
+        .find(query)
+        .where("start_date").lte(todayFormatted)
+        .where("end_date").gte(todayFormatted)
+        .exec(function (e, services) {
+            if (e) {
+                log.error(e.message);
+                return cb(e, null);
+            } else {
+                if (services.length > 0) {
+
+                    for (var i = 0, len = services.length; i < len; i++) {
+                        goebu_params.service_ids.push(services[i].service_id);
+                    }
+                    return cb(null, goebu_params);
+                } else {
+                    // TODO: decide if Error or normal response is fine
+                    log.error("No Service for this date");
+                    return cb(new Error("No Service for this date"), goebu_params);
+                }
+            }
+        });
+}
+
+/**
+ * findTripsWithServiceRouteDirection adds all trip_ids that match the given goebu_params object.
+ *
+ * @param {Object} goebu_params - goebu_params holds all of the data.
+ * optional:
+ * @param {string} [goebu_params.agency_key]
+ * @param {number[]} [goebu_params.service_ids] - Array of Service Ids
+ * @param {number} [goebu_params.route_id] - Route Id to filter Trips
+ * @param {number} [goebu_params.direction_id] - Direction Id
+ * @param {number[]} goebu_params.trip_ids - Trip Ids filtered by goebu_params
+ *
+ * @return {number[]} goebu_params.trip_ids - Trip Ids filtered by goebu_params
+ *
+ * @param {errorResultCallback} cb - callback
+ */
+function findTripsWithServiceRouteDirection(goebu_params, cb) {
+
+    var tripQuery = {};
+    //build query
+    if (goebu_params.agency_key) {
+        tripQuery.agency_key = goebu_params.agency_key;
+    }
+    if (goebu_params.route_id) {
+        tripQuery.route_id = goebu_params.route_id;
+    }
+    if ((goebu_params.direction_id === 0) || (goebu_params.direction_id === 1)) {
+        // TODO: add a new direction_id key to goebu_params.trip_ids
+
+        tripQuery.direction_id = goebu_params.direction_id;
+    } else {
+        tripQuery.$or = [{direction_id: 0}, {direction_id: 1}];
+    }
+
+    var query = Trip.find(tripQuery);
+    if (goebu_params.service_ids) {
+        query = query.where("service_id").in(goebu_params.service_ids);
+    }
+    query.exec(function (e, trips) {
+        if (e) {
+            log.error(e.message);
+            return cb(e, null);
+        } else {
+            for (var i = 0, len = trips.length; i < len; i++) {
+                if (typeof trips[i].trip_id !== 'undefined' && trips[i].trip_id !== null) {
+                    if (!goebu_params.trip_ids) {
+                        // check if direction_ids exists
+                        goebu_params.trip_ids = [];
+                    }
+                    if (!goebu_params.trip_ids[trips[i].direction_id]) {
+                        // make sure direction_id is available in the new trip
+                        goebu_params.trip_ids[trips[i].direction_id] = [];
+                    }
+                    goebu_params.trip_ids[trips[i].direction_id].push(trips[i].trip_id);
+                }
+            }
+            return cb(null, goebu_params);
+        }
+    });
+}
+
+/**
+ * findStopTimesForStopWithTripsTimeHorizon returns stop times for a defined stop_id.
+ *
+ * required:
+ * @param {Object} goebu_params
+ * optional:
+ * @param {number} [goebu_params.stop_id]
+ * @param {string} [goebu_params.agency_key]
+ * @param {number} [goebu_params.time_horizon] - If <0: past, =0: everything, >0 future
+ *
+ * @param {string[]} [goebu_params.past_times]
+ * @param {string[]} [goebu_params.times]
+ * @param {string[]} [goebu_params.future_times]
+ *
+ * @return {string[]} [goebu_params.past_times]
+ * @return {string[]} [goebu_params.times]
+ * @return {string[]} [goebu_params.future_times]
+ *
+ * @param {errorResultCallback} cb - callback
+ */
+function findStopTimesForStopWithTripsTimeHorizon(goebu_params, cb) {
+
+    var timeInSeconds = utils.timeToSeconds(new Date()) + timeCheat,
+        stopTimeQuery = {},
+        seconds_before = 100,
+        seconds_after = 864000;
+
+    goebu_params.now = utils.secondsToTime(timeInSeconds);
+    if (goebu_params.stop_id && goebu_params.stop_id > 0) {
+        stopTimeQuery.stop_id = goebu_params.stop_id;
+    }
+
+    if (goebu_params.agency_key) {
+        stopTimeQuery.agency_key = goebu_params.agency_key;
+    }
+
+    var times_key = "times";
+    if (goebu_params.time_horizon) {
+        if (goebu_params.time_horizon < 0) {
+            seconds_before = 600;
+            seconds_after = 0;
+            times_key = "past_times";
+        } else if (goebu_params.time_horizon > 0) {
+            seconds_before = 0;
+            seconds_after = 1200;
+            times_key = "future_times";
+        }
+    }
+
+    var query = StopTime.find(stopTimeQuery)
+        .select("stop_id departure_time stop_sequence -_id")
+        .where("departure_time").gte(timeInSeconds - seconds_before)
+        .where("departure_time").lte(timeInSeconds + seconds_after)
+        .sort("departure_time") //asc has been removed in favor of sort as of mongoose 3.x
+        .limit(1000);
+
+    if (goebu_params.trip_ids) {
+
+        query = query.where("trip_id").in(goebu_params.trip_ids);
+    }
+    query.exec(function (e, stopTimes) {
+
+        if (e) {
+            log.error(e.message);
+            return cb(e, null);
+        } else {
+            var len = stopTimes.length;
+            if (len > 0) {
+                goebu_params[times_key] = [];
+            } else {
+                log.warn("No StopTime found.");
+            }
+            for (var i = 0; i < len; i++) {
+                global.log.info("stopTimes[i]", stopTimes[i]);
+                goebu_params[times_key].push({
+                    stop_id: stopTimes[i].stop_id,
+                    time: stopTimes[i].departure_time,
+                    time_human: utils.secondsToTime(stopTimes[i].departure_time),
+                    sequence: stopTimes[i].stop_sequence
+                });
+            }
+            //global.log.info("goebu_params[times_key]", goebu_params[times_key]);
+            //TODO: direction_id is missing
+            return cb(null, goebu_params);
+        }
+    });
+}
+
+/**
+ * getStopsByStopIds returns stops for specified stop_ids.
+ *
+ * required:
+ * @param {Object} goebu_params
+ * @param {number[]} goebu_params.stop_ids
+ * optional:
+ * @param {string} [goebu_params.agency_key]
+ * @param {number[]} [goebu_params.direction_ids]
+ * @param {Object[]} [goebu_params.stops]
+ *
+ * @return {Object[]} [goebu_params.stops]
+ *
+ * @param {errorResultCallback} cb - callback
+ */
+function getStopsByStopIds(goebu_params, cb) {
+    // TODO: decide whether stop_ids should be saved with different direction_ids or without it at all!
+    if (!goebu_params.stop_ids) {
+        log.error("stop_ids array is required in getStopsByStopIds");
+        return cb(new Error("stop_ids array is required in getStopsByStopIds"), goebu_params);
+    }
+
+    var stop_query = {};
+    if (!goebu_params.direction_ids) {
+        goebu_params.direction_ids = [0];
+    }
+
+    if (goebu_params.agency_key) {
+        stop_query.agency_key = goebu_params.agency_key;
+    }
+
+    async.forEach(
+        goebu_params.direction_ids,
+        function (direction_id, callback) {
+            if (!goebu_params.stop_ids[direction_id]) {
+                return callback(new Error("No stop_ids for direction_id " + direction_id +
+                "in getStopsByStopIds"), goebu_params);
+            }
+            // TODO: check if stop_ids[direction_id] is empty
+            //      if so choose to iterate over stop_ids only
+            //var results = [];
+            //if (direction_id) {
+            //    results = stops[direction_id] || [];
+            //} else {
+            //    _.each(stops, function (stop, direction_id) {
+            //        results.push({direction_id: direction_id, stops: stop || []});
+            //    });
+            //}
+            async.forEachSeries(
+                goebu_params.stop_ids[direction_id],
+                function (stop_id, cb) {
+                    stop_query.stop_id = stop_id;
+                    Stop.findOne(stop_query)
+                        .select("stop_id stop_name icon stop_lat stop_lon -_id")
+                        .exec(function (e, stop) {
+                            if (e) {
+                                log.error(e.message);
+                                return cb(e, null);
+                            } else {
+                                if (!goebu_params.stops) {
+                                    goebu_params.stops = {};
+                                }
+                                if (!goebu_params.stops[direction_id]) {
+                                    goebu_params.stops[direction_id] = [];
+                                }
+                                if (goebu_params.stops[direction_id].indexOf(stop) === -1) {
+                                    goebu_params.stops[direction_id].push(stop);
+                                }
+                                return cb();
+                            }
+                        });
+                }.bind(direction_id),
+                function (e) {
+                    callback(e);
+                }
+            );
+        }, function (e) {
+            if (e) {
+                log.error(e.message);
+                return cb(new Error("No stops found"), goebu_params);
+            } else {
+                return cb(null, goebu_params);
+            }
+        });
+}
+
+/**
+ * getStopIdsByTripIds returns stop times for specified trip_ids.
+ *
+ * required:
+ * @param {Object} goebu_params
+ * @param {number[]} goebu_params.trip_ids
+ * optional:
+ * @param {number[]} [goebu_params.direction_ids]
+ * @param {string} [goebu_params.agency_key]
+ * @param {Object[]} [goebu_params.stop_ids]
+ *
+ * @return {Object[]} [goebu_params.stops]
+ *
+ * @param {errorResultCallback} cb - callback
+ */
+function getStopIdsByTripIds(goebu_params, cb) {
+    var stop_time_query = {};
+
+    if (!goebu_params.trip_ids) {
+        log.error("trip_ids array is required in getStopTimes");
+        return cb(new Error("trip_ids array is required in getStopTimes"), goebu_params);
+    }
+
+    if (!goebu_params.stop_ids) {
+        goebu_params.stop_ids = {};
+    }
+    if (goebu_params.direction_id) {
+        goebu_params.direction_ids = [goebu_params.direction_id];
+    }
+    if (!goebu_params.direction_ids) {
+        goebu_params.direction_ids = [0, 1];
+    }
+    if (goebu_params.agency_key) {
+        stop_time_query.agency_key = goebu_params.agency_key;
+    }
+
+    async.forEach(
+        goebu_params.direction_ids,
+        function (direction_id, callback) {
+            if (!goebu_params.trip_ids[direction_id]) {
+
+                log.error("No trip_ids for direction_id " +
+                direction_id + " in getStopIdsByTripIds");
+                return cb(new Error("No trip_ids for direction_id " +
+                direction_id + " in getStopIdsByTripIds"), goebu_params);
+            }
+
+            if (!goebu_params.stop_ids[direction_id]) {
+                goebu_params.stop_ids[direction_id] = [];
+            }
+
+            StopTime.find(stop_time_query)
+                .where({
+                    trip_id: {
+                        $in: goebu_params.trip_ids[direction_id]
+                    }
+                })
+                .distinct("stop_id")
+                .exec(function (e, distinct_stop_ids) {
+                    if (e) {
+                        log.error(e, goebu_params);
+                        callback(e, null);
+                    } else {
+                        goebu_params.stop_ids[direction_id] = distinct_stop_ids;
+                        return callback(null, goebu_params);
+                    }
+                });
+
+        }, function (e) {
+            if (e) {
+                log.error(e.message);
+                return cb(new Error("No stops found"), goebu_params);
+            } else {
+                return cb(null, goebu_params);
+            }
+        }
+    );
+}
+
+/**
+ * isDistinctSequencePart checks if sequences are distinct.
+ *
+ * required:
+ * @param {Object} past
+ * @param {Object} future
+ * @param direction_id
+ *
+ * @return {Boolean} Is space between first and second big enough
+ */
+function isDistinctSequencePart(past, future, direction_id) {
+    if (typeof past === 'undefined' || past === null) {
+
+        return false;
+    }
+    if (typeof future === 'undefined' || future === null) {
+
+        return false;
+    }
+
+    if (direction_id > 0) {
+        if (past.sequence > future.sequence) {
+
+            return false;
+        }
+    } else {
+        if (past.sequence < future.sequence) {
+            return false;
+        }
+    }
+
+    var sequence_gap_limit = 10;
+    var sequence_diff = Math.abs(past.sequence - future.sequence);
+    if (direction_id <= 0) {
+        sequence_diff = sequence_diff - 1 + 1;
+    }
+
+    return sequence_diff >= sequence_gap_limit;
+}
+
+/**
+ * findDistinctSequencesForTimes returns stop times for specified trip_ids.
+ *
+ * required:
+ * @param {Object} goebu_params
+ * @param {number[]} goebu_params.future_times
+ * optional:
+ * @param {Object[]} [goebu_params.distinct_sequences]
+ *
+ * @return {Object[]} [goebu_params.distinct_sequences]
+ *
+ * @param {errorResultCallback} cb - callback
+ */
+function findDistinctSequencesForTimes(goebu_params, cb) {
+
+    if (!goebu_params.future_times) {
+        log.error("future_times is required in findDistinctSequencesForTimes");
+        return cb(new Error("future_times is required in findDistinctSequencesForTimes"), goebu_params);
+    }
+    if (!goebu_params.direction_id) {
+        log.error("goebu_params.direction_id is required in findDistinctSequencesForTimes");
+        return cb(new Error("goebu_params.direction_id is required in findDistinctSequencesForTimes"), goebu_params);
+    }
+
+    if (!goebu_params.distinct_sequences) {
+        goebu_params.distinct_sequences = [];
+    }
+    goebu_params.distinct_sequences.push(goebu_params.future_times[0]);
+
+    // TODO: check with other parameters from the specific method
+    var slots_ahead = 7;
+
+    var loops = Math.min(slots_ahead, goebu_params.future_times.length - 1);
+
+    for (var i = 1; i <= loops; i++) {
+        var distinct_flag = true;
+        for (var j = 0, len = goebu_params.distinct_sequences.length; j < len; j++) {
+
+            if (!(isDistinctSequencePart(goebu_params.future_times[i],
+                    goebu_params.distinct_sequences[j], goebu_params.direction_id))) {
+                distinct_flag = false;
+            }
+        }
+        if (distinct_flag) {
+            goebu_params.distinct_sequences.push(goebu_params.future_times[i]);
+        }
+    }
+    if ((goebu_params.distinct_sequences.length <= 0)) {
+        log.warn("no distinct sequences found in findDistinctSequencesForTimes");
+    }
+    return cb(null, goebu_params);
+}
+
+/**
+ * constructLiveSequences returns next and previous stops of live_sequences from past times and distinct sequences.
+ *
+ * required:
+ * @param {Object} goebu_params
+ * @param {number[]} goebu_params.past_times
+ * @param {Object[]} goebu_params.distinct_sequences
+ * optional:
+ * @param {Object[]} [goebu_params.live_sequences]
+ * @param {number[]} [goebu_params.live_sequences_stop_ids]
+ *
+ * @return {Object[]} [goebu_params.distinct_sequences]
+ * @return {number[]} [goebu_params.live_sequences_stop_ids]
+ *
+ * @param {errorResultCallback} cb - callback
+ */
+function constructLiveSequences(goebu_params, cb) {
+    utils.checkRequiredArrays({
+        "past_times required - gtfs.constructLiveSequences": goebu_params.past_times,
+        "distinct_sequences required - gtfs.constructLiveSequences": goebu_params.distinct_sequences,
+        "direction_id required - gtfs.constructLiveSequences": goebu_params.direction_id,
+    },cb)
+
+    goebu_params = utils.checkAndInitiateMissingArrays(goebu_params, ['live_sequences', 'live_sequences_stop_ids'])
+
+    var nPast_times = goebu_params.past_times.length - 1;
+
+    for (var i = 0, len = goebu_params.distinct_sequences.length; i < len; i++) {
+        for (var j = nPast_times; j >= 0; j--) {
+            var sequence_diff = Math.abs(goebu_params.past_times[j].sequence -
+            goebu_params.distinct_sequences[i].sequence)
+            if (sequence_diff <= 10) {
+                if (goebu_params.direction_id > 0) {
+                    if (goebu_params.past_times[j].sequence < goebu_params.distinct_sequences[i].sequence) {
+                        if (!goebu_params.live_sequences[i]) {
+                            goebu_params.live_sequences[i] = {};
+                        }
+                        goebu_params.live_sequences[i].next = goebu_params.distinct_sequences[i];
+                        goebu_params.live_sequences_stop_ids.push(goebu_params.distinct_sequences[i].stop_id);
+                        goebu_params.live_sequences[i].previous = goebu_params.past_times[j];
+                        goebu_params.live_sequences_stop_ids.push(goebu_params.past_times[j].stop_id);
+                        break;
+                    }
+
+                }
+            }
+        }
+    }
+
+    return cb(null, goebu_params);
+}
+
+/**
+ * lookupStopIds returns array of stops for specified live_sequences_stop_ids.
+ *
+ * required:
+ * @param {Object} goebu_params
+ * @param {number[]} goebu_params.live_sequences_stop_ids
+ * optional:
+ * @param {Object[]} [goebu_params.resolved_stops]
+ *
+ * @return {Object[]} [goebu_params.resolved_stops]
+ *
+ * @param {errorResultCallback} cb - callback
+ */
+function lookupStopIds(goebu_params, cb) {
+    //global.log.warn("goebu_params", goebu_params);
+    utils.checkRequiredArrays({"live_sequences_stop_ids required - gtfs.lookupStopIds": goebu_params.live_sequences_stop_ids},cb)
+
+if (!goebu_params.resolved_stops) {
+    goebu_params.resolved_stops = [];
+}
+Stop
+    .find()
+    .where("stop_id").in(goebu_params.live_sequences_stop_ids)
+    .select("stop_id stop_lat stop_lon -_id")
+    .exec(function (e, stops) {
+        if (e) {
+            log.error(e.message);
+            return cb(e, goebu_params);
+        } else {
+            goebu_params.resolved_stops.push(stops);
+            return cb(null, goebu_params);
+        }
+    });
+}
+
+/**
+ * assignResolvedStopsToLiveSequence retrieves lat/lon of stops for specified live_sequences and resolved_stops.
+ *
+ * required:
+ * @param {Object} goebu_params
+ * @param {number[]} goebu_params.resolved_stops
+ * @param {number[]} goebu_params.live_sequences
+ *
+ * @return {Object[]} [goebu_params.live_sequences]
+ *
+ * @param {errorResultCallback} cb - callback
+ */
+function assignResolvedStopsToLiveSequence(goebu_params, cb) {
+    utils.checkRequiredArrays({
+        "resolved_stops required - gtfs.assignResolvedStopsToLiveSequence": goebu_params.resolved_stops,
+        "live_sequences required - gtfs.assignResolvedStopsToLiveSequence": goebu_params.live_sequences
+    },cb)
+
+    for (var i = 0, len = goebu_params.live_sequences.length; i < len; i++) {
+        // TODO: fix the ugly resolved_stops thingy
+        for (var j = 0, len2 = goebu_params.resolved_stops[0].length; j < len2; j++) {
+            if (goebu_params.resolved_stops[0][j].stop_id === goebu_params.live_sequences[i].next.stop_id) {
+                goebu_params.live_sequences[i].next.stop_lat = goebu_params.resolved_stops[0][j].stop_lat;
+                goebu_params.live_sequences[i].next.stop_lon = goebu_params.resolved_stops[0][j].stop_lon;
+            }
+            if (goebu_params.resolved_stops[0][j].stop_id === goebu_params.live_sequences[i].previous.stop_id) {
+                goebu_params.live_sequences[i].previous.stop_lat = goebu_params.resolved_stops[0][j].stop_lat;
+                goebu_params.live_sequences[i].previous.stop_lon = goebu_params.resolved_stops[0][j].stop_lon;
+            }
+        }
+    }
+    return cb(null, goebu_params);
+}
+
+/**
+ * calculatePositionForLiveSequence interpolates live bus positions with live_sequences.
+ *
+ * required:
+ * @param {Object} goebu_params
+ * @param {number[]} goebu_params.live_sequences
+ *
+ * @return {Object[]} [goebu_params.live_sequences]
+ *
+ * @param {errorResultCallback} cb - callback
+ */
+function calculatePositionForLiveSequence(goebu_params, cb) {
+
+    for (var i = 0, len = goebu_params.live_sequences.length; i < len; i++) {
+        var time_total = goebu_params.live_sequences[i].next.time - goebu_params.live_sequences[i].previous.time;
+
+        var today = new Date();
+        var nowTimeInSeconds = utils.timeToSeconds(today) + timeCheat; // minus 12 hours
+        var progress = (nowTimeInSeconds - goebu_params.live_sequences[i].previous.time) / time_total;
+        // TODO: check for NAN an infinite
+
+        var vec_lat = goebu_params.live_sequences[i].next.stop_lat - goebu_params.live_sequences[i].previous.stop_lat;
+        var vec_lon = goebu_params.live_sequences[i].next.stop_lon - goebu_params.live_sequences[i].previous.stop_lon;
+
+        goebu_params.live_sequences[i].lat = goebu_params.live_sequences[i].previous.stop_lat + progress * vec_lat;
+        goebu_params.live_sequences[i].lon = goebu_params.live_sequences[i].previous.stop_lon + progress * vec_lon;
+    }
+    return cb(null, goebu_params);
+}
 
 module.exports = {
+    /**
+     * agencies gets gets a list of all agencies
+     * @param cb
+     */
     agencies: function (cb) {
-        //gets a list of all agencies
         Agency.find({}, cb);
     },
 
+    /**
+     * getRoutesByAgency gets routes for one agency
+     * @param agency_key
+     * @param cb
+     */
     getRoutesByAgency: function (agency_key, cb) {
-        //gets routes for one agency
+
         Route.find({agency_key: agency_key}, cb);
     },
 
+    /**
+     * getAgenciesByDistance gets all agencies within a radius.
+     * @param lat
+     * @param lon
+     * @param radius
+     * @param cb
+     */
     getAgenciesByDistance: function (lat, lon, radius, cb) {
-        //gets all agencies within a radius
-
-        if (_.isFunction(radius)) {
-            cb = radius;
-            radius = 25; // default is 25 miles
-        }
-
         lat = parseFloat(lat);
         lon = parseFloat(lon);
 
         var radiusInDegrees = Math.round(radius / 69 * 100000) / 100000;
 
         Agency
-            .where('agency_center')
+            .where("agency_center")
             .near(lon, lat).maxDistance(radiusInDegrees)
             .exec(cb);
     },
 
-    getRoutesByDistance: function (lat, lon, radius, cb) {
-        // TODO : fix getTrips with arguments - agency_key, route_id, direction_id, direction_ids, trip_ids
-        //gets all routes within a radius
-
-        if (_.isFunction(radius)) {
-            cb = radius;
-            radius = 1; //default is 1 mile
-        }
-
-        lat = parseFloat(lat);
-        lon = parseFloat(lon);
-
-        var radiusInDegrees = Math.round(radius / 69 * 100000) / 100000
-            , stop_ids = []
-            , trip_ids = []
-            , route_ids = []
-            , routes = [];
-
-        async.series([
-            async.apply(getStopsNearby, lon, lat, radiusInDegrees, stop_ids),
-            getTrips,
-            //async.apply(getTrips, agency_key, route_id, direction_id, direction_ids, trip_ids),
-            async.apply(getRoutes, trip_ids, route_ids),
-            async.apply(lookupRoutes, route_ids, routes)
-        ], function (e, results) {
-            if (e) {
-                debug(e, "getRoutesByDistance - error");
-                cb(e, null);
-            } else {
-                cb(e, routes);
-            }
-        });
-
-
-    },
-
+    /**
+     * getStopsByRoute gets stops for one route
+     * @param agency_key
+     * @param route_id
+     * @param direction_id
+     * @param cb
+     */
     getStopsByRoute: function (agency_key, route_id, direction_id, cb) {
-        //gets stops for one route
 
-        if (_.isFunction(direction_id)) {
-            cb = direction_id;
-            direction_id = null;
-        }
+        var goebu_params = {
+            agency_key: agency_key,
+            route_id: route_id,
+            direction_id: direction_id
+        };
 
-        var stops = {}
-            , trip_ids = {}
-            , stop_ids = {}
-            , direction_ids = [];
-
-        async.series([
-            async.apply(getTrips, agency_key, route_id, direction_id, direction_ids, trip_ids),
-            async.apply(getStopTimes, agency_key, direction_ids, trip_ids, stop_ids),
-            async.apply(getStops, agency_key, direction_ids, stop_ids, stops)
-        ], function (e, res) {
-            // transform results based on whether direction_id was
-            // - specified (return stops for a direction)
-            // - or not specified (return stops for all directions)
-            if (e) {
-                debug(e, "getStopsByRoute - error");
-                cb(e, null);
-            } else {
-                var results = [];
-                if (direction_id) {
-                    results = stops[direction_id] || [];
-                } else {
-                    _.each(stops, function (stop, direction_id) {
-                        console.log(stop, "stop");
-                        results.push({direction_id: direction_id, stops: stop || []});
-                    });
+        async.waterfall([
+                async.apply(findTripsWithServiceRouteDirection, goebu_params),
+                getStopIdsByTripIds,
+                getStopsByStopIds,
+                function (results, cb) {
+                    //results = results.stops;
+                    cb(null, results);
                 }
-                cb(e, results);
-            }
-        });
-
-
+            ],
+            utils.returnResults(cb));
     },
 
-    getStopsByDistance: function (lat, lon, radius, cb) {
-        //gets all stops within a radius
-        var results = [];
-
-        if (_.isFunction(radius)) {
-            cb = radius;
-            radius = 1; //default is 1 mile
-        }
-
-        lat = parseFloat(lat);
-        lon = parseFloat(lon);
-
-        var radiusInDegrees = Math.round(radius / 69 * 100000) / 100000;
-
-        Stop
-            .where('loc')
-            .near(lon, lat).maxDistance(radiusInDegrees)
-            .select('stop_id stop_name stop_lat stop_lon -_id')
-            .exec(function (e, stops) {
-                if (e) {
-                    debug(e, "getStopsByDistance - error");
-                    cb(e, null);
-                } else {
-                    results.push({direction_id: 0, stops: stops || []});
-                    cb(e, results);
-                }
-            });
-    },
-
+    /**
+     * getTimesByStop gets stop times with optional filters.
+     *
+     * optional:
+     * @param [agency_key]
+     * @param [route_id]
+     * @param [stop_id]
+     * @param [direction_id]
+     *
+     * @return {string[]} [goebu_params.times]
+     *
+     * @param {errorResultCallback} cb - callback
+     */
     getTimesByStop: function (agency_key, route_id, stop_id, direction_id, cb) {
-        //to want to give it a numOfTimes argument. 1000 is probably at least 10x
-        //more times than will be returned.
-
-        //gets routes for one agency
-        if (_.isFunction(direction_id)) {
-            cb = direction_id;
-            direction_id = null; //default is ~ 1/4 mile
-        }
-
-        var fields = {
+        var goebu_params = {
+            time_horizon: 0,
             agency_key: agency_key,
             route_id: route_id,
             stop_id: stop_id,
             direction_id: direction_id
         };
 
-        debug(stop_id, "stop_id");
+        async.waterfall([
+                async.apply(findServices, goebu_params),
+                findTripsWithServiceRouteDirection,
+                findStopTimesForStopWithTripsTimeHorizon,
+                function (results, cb) {
+                    //results = results.times;
 
-        var service_ids = []
-            , trip_ids = []
-            , times = [];
-
-        //Find service_id that matches todays date
-        async.series([
-            async.apply(checkFields, fields),
-            async.apply(findServices, agency_key, service_ids),
-            async.apply(findTrips, agency_key, route_id, direction_id, service_ids, trip_ids),
-            async.apply(findTimeScheduleForStop, agency_key, stop_id, trip_ids, times, 1)
-        ], function (e, results) {
-            if (e) {
-                debug(e, "getTimesByStop - error");
-                cb(e, null);
-            } else {
-                cb(e, times);
-            }
-
-        });
+                    cb(null, results);
+                }
+            ],
+            utils.returnResults(cb));
 
     },
 
-    findBothDirectionNames: function (agency_key, route_id, cb) {
-        /*
-         * Returns an object of {northData: "Headsign north", southData: "Headsign south"}
-         */
-        var findDirectionName = function (agency_key, route_id, direction_id, cb) {
-            var query = {
-                agency_key: agency_key,
-                route_id: route_id,
-                direction_id: direction_id
-            };
-
-            Trip
-                .find(query)
-                .limit(1)
-                .run(function (e, trips) {
-                    if (e) {
-                        debug(e, "findBothDirectionNames - error");
-                        cb(e, null);
-                    } else {
-                        cb(trips[0].trip_headsign);
-                    }
-                });
-        };
-    },
-
-    getShapesByRoute: function (agency_key, route_id, direction_id, cb) {
-        if (_.isFunction(direction_id)) {
-            cb = direction_id;
-            direction_id = null;
-        }
-
-        var shape_ids = [];
-        var shapes = [];
-
-        async.series([
-            async.apply(getShapeIds, agency_key, route_id, direction_id, shape_ids),
-            async.apply(getShapes, agency_key, shape_ids, shapes)
-        ], function (err, result) {
-            if (err) {
-                debug(err, "getShapesByRoute - error");
-                cb(err, null);
-            } else {
-                cb(null, shapes);
-            }
-        });
-
-
-    },
-
-    getInterpolatedBusPositions: function (cb) {
-        //
-        // get all routes --> route_ids [21,22]
-        // get all trips with route_ids --> trip_ids [{route_id: 22: direction id: 0 [22001, 22002, 22003],
-        // get all stoptimes for all direction_ids and trip_ids --> stop_ids, departure_time > NOW
-
-        //  getTimesByStop
-        //  agency_key, route_id, stop_id, direction_id, cb
-    },
-
-    getTimesByStopForAllRoutes: function (agency_key, stop_id, direction_id, cb) {
-        //gets routes for one agency
-
-        if (_.isFunction(direction_id)) {
-            cb = direction_id;
-            direction_id = null; //default is ~ 1/4 mile
-        }
-
-        var fields = {
-            agency_key: agency_key,
-            stop_id: stop_id
-        };
-        debug(stop_id, "stop_id");
-
-        var service_ids = []
-            , trip_ids = []
-            , times = [];
-
-        //Find service_id that matches todays date
-        async.series([
-            async.apply(checkFields, fields),
-            async.apply(findServices, agency_key, service_ids),
-            async.apply(findTrips, agency_key, null, direction_id, service_ids, trip_ids),
-            async.apply(findTimeScheduleForStop, agency_key, stop_id, trip_ids, times, 0)
-        ], function (e, results) {
-            if (e) {
-                debug(e, "getTimesByStopForAllRoutes - error");
-                cb(e, null);
-            } else {
-                cb(e, times);
-            }
-        });
-    },
-
+    /**
+     * getAllLiveBusShapes interpolates live bus positions.
+     *
+     * optional:
+     * @param [agency_key]
+     * @param [stop_id]
+     * @param [direction_id]
+     *
+     * @return {Object[]} [goebu_params.live_sequences]
+     *
+     * @param {errorResultCallback} cb - callback
+     */
     getAllLiveBusShapes: function (agency_key, stop_id, direction_id, cb) {
-        //gets routes for one agency
-
-        if (_.isFunction(direction_id)) {
-            cb = direction_id;
-            direction_id = null; //default is ~ 1/4 mile
-        }
-
-        var fields = {
-            agency_key: agency_key
+        var goebu_params = {
+            agency_key: agency_key,
+            direction_id: direction_id
         };
-
-        var service_ids = []
-            , trip_ids = []
-            , future_times = []
-            , past_times = []
-            , live_sequences = []
-            , stop_ids = []
-            , resolved_stops = []
-            , distinct_sequences = [];
-
-        //Find service_id that matches todays date
-        async.series([
-            async.apply(checkFields, fields),
-            async.apply(findServices, agency_key, service_ids),
-            async.apply(findTrips, agency_key, null, null, service_ids, trip_ids),
-            async.apply(findTimeScheduleForStop, agency_key, -1, trip_ids, future_times, 1),
-            async.apply(findDistinctSequences, distinct_sequences, future_times),
-            async.apply(findTimeScheduleForStop, agency_key, -1, trip_ids, past_times, -1),
-            async.apply(constructLiveSequences, past_times, distinct_sequences, stop_ids, live_sequences),
-            async.apply(lookupStopIds, stop_ids, resolved_stops),
-            async.apply(assignResolvedStopsToLiveSequence, resolved_stops, live_sequences),
-            async.apply(calculatePositionForLiveSequence, live_sequences)
-
-        ], function (e, results) {
-
-            if (e) {
-                debug(e, "getTimesByStopForAllRoutes - error");
-                cb(e, null);
-            } else {
-                cb(e, live_sequences);
-            }
-        });
+        async.waterfall([
+                async.apply(findServices, goebu_params),
+                findTripsWithServiceRouteDirection,
+                function (goebu_params, cb) {
+                    goebu_params.time_horizon = 1;
+                    return cb(null, goebu_params);
+                },
+                findStopTimesForStopWithTripsTimeHorizon,
+                findDistinctSequencesForTimes,
+                function (goebu_params, cb) {
+                    goebu_params.time_horizon = -1;
+                    return cb(null, goebu_params);
+                },
+                findStopTimesForStopWithTripsTimeHorizon,
+                constructLiveSequences,
+                lookupStopIds,
+                assignResolvedStopsToLiveSequence,
+                calculatePositionForLiveSequence,
+                function (results, cb) {
+                    //results = results.live_sequences;
+                    cb(null, results);
+                }
+            ],
+            utils.returnResults(cb));
     }
 };
-
-function checkFields(fields, cb) {
-    for (var field in fields) {
-        if (fields.hasOwnProperty(field)) {
-            if (fields[field] === null || typeof fields[field] === 'undefined') {
-                debug('No ' + field + ' specified');
-                cb(new Error('No ' + field + ' specified'), 'fields');
-            }
-        } else {
-            debug("Unknown key specified");
-            cb(new Error('Unknown key specified'), 'fields');
-        }
-    }
-    cb(null, 'fields');
-}
-
-function findServices(agency_key, service_ids, cb) {
-    var today = new Date();
-
-    var query = {agency_key: agency_key}
-        , todayFormatted = utils.formatDay(today);
-
-    //build query
-    query[utils.getDayName(today).toLowerCase()] = 1;
-
-    Calendar
-        .find(query)
-        .where('start_date').lte(todayFormatted)
-        .where('end_date').gte(todayFormatted)
-        .exec(function (e, services) {
-            if (e) {
-                debug(e, "findServices - error");
-                cb(e, null);
-            } else {
-                if (services.length) {
-                    services.forEach(function (service) {
-                        service_ids.push(service.service_id);
-                    });
-                    cb(null, 'service');
-                } else {
-                    debug("findServices - No Service for this date - error");
-                    cb(new Error('No Service for this date'), 'service');
-                }
-            }
-        });
-}
-
-function findTrips(agency_key, route_id, direction_id, service_ids, trip_ids, cb) {
-
-    var query = {
-        agency_key: agency_key
-    };
-
-    if (route_id !== null && typeof route_id !== 'undefined') {
-        query.route_id = route_id;
-    }
-
-    if ((direction_id === 0) || (direction_id === 1)) {
-        query.direction_id = direction_id;
-    } else {
-        query["$or"] = [{direction_id: 0}, {direction_id: 1}]
-    }
-
-    Trip
-        .find(query)
-        .where('service_id').in(service_ids)
-        .exec(function (e, trips) {
-            if (e) {
-                debug(e, "findTrips - error");
-                cb(e, null);
-            } else {
-                if (trips.length) {
-                    trips.forEach(function (trip) {
-                        trip_ids.push(trip.trip_id);
-                    });
-                    cb(null, 'trips')
-                } else {
-                    debug("findTrips - No trips for this date - error");
-                    cb(new Error('No trips for this date'), 'trips');
-                }
-            }
-        });
-}
-
-function getTrips(agency_key, route_id, direction_id, direction_ids, trip_ids, cb) {
-    // TODO: merge with find Trips
-    var tripQuery = {
-        agency_key: agency_key
-        , route_id: route_id
-    };
-    if (direction_id) {
-        tripQuery.direction_id = direction_id;
-    } // else match all direction_ids
-
-    Trip
-        .count(tripQuery, function (e, tripCount) {
-            if (tripCount) {
-                Trip
-                    .find(tripQuery,
-                    function (e, trips) {
-                        if (e) {
-                            debug(e, "findTrips - error");
-                            cb(e, null);
-                        } else {
-                            _.each(trips, function (trip) {
-                                if (!trip) return cb();
-                                if (direction_ids.indexOf(trip.direction_id) < 0) direction_ids.push(trip.direction_id);
-                                if (!trip_ids[trip.direction_id]) trip_ids[trip.direction_id] = [];
-                                trip_ids[trip.direction_id].push(trip.trip_id);
-                            });
-                            cb(null, 'trips')
-                        }
-                    });
-            } else {
-                cb(new Error('Invalid agency_key or route_id'), 'trips');
-            }
-        });
-}
-
-function findTimeScheduleForStop(agency_key, stop_id, trip_ids, times, time_horizon, cb) {
-    var today = new Date();
-    //var timeInSeconds = utils.timeToSeconds(today);
-    var timeInSeconds = utils.timeToSeconds(today) + timeCheat; // minus 12 hours
-
-    var numOfTimes = 1000;
-    var query = {
-        agency_key: agency_key
-    };
-
-    if (stop_id > 0) {
-        query.stop_id = stop_id;
-    }
-
-    var seconds_before = 86400; // 20 * 60 seconds = 20 mins
-    var seconds_after = 86400;
-
-    if (typeof time_horizon !== 'undefined') {
-        if (time_horizon < 0) {
-            seconds_before = 86400;
-            seconds_after = 0;
-        } else if (time_horizon > 0) {
-            seconds_before = 0;
-            seconds_after = 86400;
-        }
-    }
-
-    StopTime
-        .find(query)
-        .where('trip_id').in(trip_ids)
-        .where('departure_time').gte(timeInSeconds - seconds_before)
-        .where('departure_time').lte(timeInSeconds + seconds_after)
-        .sort('departure_time') //asc has been removed in favor of sort as of mongoose 3.x
-        .limit(numOfTimes)
-        .exec(function (e, stopTimes) {
-            if (e) {
-                debug(e, "getStopTimes - error");
-                cb(e, null);
-            } else {
-                //console.log(stopTimes, "stopTimes");
-                if (stopTimes.length) {
-                    //times = stopTimes;
-                    //times.push(stopTimes);
-                    stopTimes.forEach(function (stopTime) {
-                        times.push({
-                            stop_id: stopTime.stop_id,
-                            time: stopTime.departure_time,
-                            time_human: utils.secondsToTime(stopTime.departure_time),
-                            sequence: stopTime.stop_sequence
-                        });
-                    });
-                    cb(null, 'times');
-                } else {
-                    cb(new Error('No times available for this stop on this date'), 'times');
-                }
-            }
-        });
-}
-
-function getStops(agency_key, direction_ids, stop_ids, stops, cb) {
-    async.forEach(
-        direction_ids,
-        function (direction_id, cb) {
-            if (!stop_ids[direction_id]) return cb();
-            async.forEachSeries(
-                stop_ids[direction_id],
-                function (stop_id, cb) {
-                    Stop.findOne()
-                        .where({agency_key: agency_key, stop_id: stop_id})
-                        .select('stop_id stop_name icon stop_lat stop_lon -_id')
-                        .exec(function (e, stop) {
-                            if (e) {
-                                debug(e, "getStops - error");
-                                cb(e, null);
-                            } else {
-                                if (!stops[direction_id]) stops[direction_id] = [];
-                                if (stops[direction_id].indexOf(stop) === -1) {
-                                    stops[direction_id].push(stop);
-                                }
-                                cb();
-                            }
-                        });
-                }.bind(direction_id),
-                function (e) {
-                    cb(e);
-                }
-            );
-        }, function (e) {
-            if (e) {
-                debug(e, "No stops found - error");
-                cb(new Error('No stops found'), 'stops');
-            } else {
-                cb(null, 'stops');
-            }
-        });
-}
-
-function getStopTimes(agency_key, direction_ids, trip_ids, stop_ids, cb) {
-    _.each(direction_ids,
-        function (direction_id) {
-            if (!trip_ids[direction_id]) return cb();
-            if (!stop_ids[direction_id]) stop_ids[direction_id] = [];
-
-            StopTime.find()
-                //.sort('stop_sequence')
-                .where({agency_key: agency_key, trip_id: {$in: trip_ids[direction_id]}})
-                .distinct('stop_id')
-                .exec(function (e, distinct_stop_ids) {
-                    if (e) {
-                        debug(e, "getStopTimes - error");
-                        cb(e, null);
-                    } else {
-                        stop_ids[direction_id] = distinct_stop_ids;
-                        return cb(null, 'times');
-                    }
-                })
-        }
-    );
-}
-
-function getStopsNearby(lon, lat, radiusInDegrees, stop_ids, cb) {
-    Stop
-        .where('loc')
-        .near(lon, lat).maxDistance(radiusInDegrees)
-        .exec(function (e, stops) {
-            if (e) {
-                debug(e, "getStopsNearby - error");
-                cb(e, null);
-            } else {
-                if (stops.length) {
-                    stops.forEach(function (stop) {
-                        if (stop.stop_id) {
-                            stop_ids.push(stop.stop_id);
-                        }
-                    });
-                    cb(e, 'stops');
-                } else {
-                    cb(new Error('No stops within ' + radius + ' miles'), 'stops');
-                }
-            }
-        });
-}
-
-function getRoutes(trip_ids, route_ids, cb) {
-    Trip
-        .distinct('route_id')
-        .where('trip_id').in(trip_ids)
-        .exec(function (e, results) {
-            if (e) {
-                debug(e, "getRoutes - error");
-                cb(e, null);
-            } else {
-                if (results.length) {
-                    route_ids = results;
-                    cb(null, 'routes');
-                } else {
-                    cb(new Error('No routes to any stops within ' + radius + ' miles'), 'routes');
-                }
-            }
-        });
-}
-
-function lookupRoutes(route_ids, routes, cb) {
-    Route
-        .where('route_id').in(route_ids)
-        .exec(function (e, results) {
-            if (e) {
-                debug(e, "lookupRoutes - error");
-                cb(e, null);
-            } else {
-                if (results.length) {
-                    routes = results;
-                    cb(null, 'lookup');
-                } else {
-                    cb(new Error('No information for routes'), 'lookup');
-                }
-            }
-        });
-}
-
-function getShapeIds(agency_key, route_id, direction_id, shape_ids, cb) {
-    var query = {
-        agency_key: agency_key,
-        route_id: route_id
-    };
-
-    if ((direction_id === 0) || (direction_id === 1)) {
-        query.direction_id = direction_id;
-    } else {
-        query["$or"] = [{direction_id: 0}, {direction_id: 1}]
-    }
-
-    Trip
-        .find(query)
-        .distinct('shape_id', function (err, results) {
-            if (err) {
-                debug(err, "getShapeIds - error");
-                cb(err, null);
-            }
-            if (results.length) {
-                shape_ids = results;
-                cb(null, 'shape_ids');
-            } else {
-                cb(new Error('No trips with shapes.'), 'trips')
-            }
-        });
-}
-
-function getShapes(agency_key, shape_ids, shapes, cb) {
-    async.forEach(shape_ids, function (shape_id, cb) {
-        Shape.find({
-            agency_key: agency_key,
-            shape_id: parseInt(shape_id, 10)
-        }, function (err, shape_pts) {
-            if (err) {
-                debug(err, "getShapes - error");
-                cb(err, null);
-            }
-            if (shape_pts.length) {
-                shapes.push(shape_pts);
-                cb(null, 'shape_pts');
-            } else {
-                debug(err, "getShapes - No shapes with shape_id.");
-                cb(new Error('No shapes with shape_id.'), 'shape_pts')
-            }
-        });
-    }, function (err) {
-        if (err) {
-            debug(err, "getShapes - error");
-            cb(err, 'shapes');
-        } else {
-            cb(null, 'shapes');
-        }
-    })
-}
-
-function findDistinctSequences(distinct_sequences, times, cb) {
-    distinct_sequences.push(times[0]);
-
-    var slots_ahead = 7;
-
-
-    var loops = Math.min(slots_ahead, times.length - 1);
-
-    for (var i = 1; i <= loops; i++) {
-        var distinct_flag = true;
-        for (var j in distinct_sequences) {
-            if (distinct_sequences.hasOwnProperty(j)) {
-                if (isDistinctSequencePart(times[i], distinct_sequences[j])) {
-                    distinct_flag = false;
-                } else {
-                    console.log(times[i].sequence, "times[i].sequence");
-                    //console.log(tmp_sequence_diff, "tmp_sequence_diff");
-                }
-            }
-        }
-        if (distinct_flag) {
-            distinct_sequences.push(times[i]);
-            console.log(distinct_sequences, "distinct_sequences");
-        }
-    }
-    cb(null, 'find distinct_sequences');
-}
-
-
-function isDistinctSequencePart(first, second) {
-    var skip_sequence = 10;
-    var tmp_sequence_diff = Math.abs(first.sequence - second.sequence);
-
-    return tmp_sequence_diff < skip_sequence;
-}
-
-function constructLiveSequences(past_times, distinct_sequences, stop_ids, live_sequences, cb) {
-    var nPast_times = past_times.length - 1;
-
-    for (var j in distinct_sequences) {
-        if (distinct_sequences.hasOwnProperty(j)) {
-            for (var i = nPast_times; i >= 0; i--) {
-                if (isDistinctSequencePart(past_times[i], distinct_sequences[j])) {
-                    live_sequences[j]['next'] = distinct_sequences[j];
-                    stop_ids.push(distinct_sequences[j].stop_id);
-                    live_sequences[j]['previous'] = past_times[i];
-                    stop_ids.push(past_times[i].stop_id);
-                    break;
-                }
-            }
-        }
-    }
-    cb(null, 'find live_sequences');
-}
-
-function assignResolvedStopsToLiveSequence(resolved_stops, live_sequences, cb) {
-    if (live_sequences.length > 0 && resolved_stops.length > 0) {
-        for (var j in live_sequences) {
-            if (live_sequences.hasOwnProperty(j)) {
-                for (var i in resolved_stops[0]) {
-                    if (resolved_stops[0].hasOwnProperty(i)) {
-                        if (resolved_stops[0][i].stop_id === live_sequences[j]['next'].stop_id) {
-                            live_sequences[j]['next']['stop_lat'] = resolved_stops[0][i].stop_lat;
-                            live_sequences[j]['next']['stop_lon'] = resolved_stops[0][i].stop_lon;
-
-                        }
-                        if (resolved_stops[0][i].stop_id === live_sequences[j]['previous'].stop_id) {
-                            live_sequences[j]['previous']['stop_lat'] = resolved_stops[0][i].stop_lat;
-                            live_sequences[j]['previous']['stop_lon'] = resolved_stops[0][i].stop_lon;
-
-                        }
-                    }
-                }
-            }
-        }
-    }
-    cb(null, "assignResolvedStopsToLiveSequence");
-}
-
-function calculatePositionForLiveSequence(live_sequence, cb) {
-    for (var i in live_sequence) {
-        if (live_sequence.hasOwnProperty(i)) {
-            var tGesamt = live_sequence[i]['next'].time - live_sequence[i]['previous'].time;
-            //debug(live_sequence[i]['previous'].time, "live_sequence[i]['previous'].time");
-            //debug(live_sequence[i]['next'].time, "live_sequence[i]['next'].time");
-            //
-            //debug(tGesamt, "tGesamt");
-
-            var today = new Date();
-            //var timeInSeconds = utils.timeToSeconds(today);
-            var nowTimeInSeconds = utils.timeToSeconds(today) + timeCheat; // minus 12 hours
-            //debug(nowTimeInSeconds, "nowTimeInSeconds");
-
-            var fortschritt = (nowTimeInSeconds - live_sequence[i]['previous'].time) / tGesamt;
-            // check for NAN an infinite
-            //debug(fortschritt, "fortschritt");
-
-            var vektor_lat = live_sequence[i]['next'].stop_lat - live_sequence[i]['previous'].stop_lat;
-            var vektor_lon = live_sequence[i]['next'].stop_lon - live_sequence[i]['previous'].stop_lon;
-
-            live_sequence[i]['lat'] = live_sequence[i]['previous'].stop_lat + fortschritt * vektor_lat;
-            live_sequence[i]['lon'] = live_sequence[i]['previous'].stop_lon + fortschritt * vektor_lon;
-        }
-    }
-    cb(null, "calculatePositionForLiveSequence");
-}
-
-function lookupStopIds(stop_ids, resolved_stops, cb) {
-    Stop
-        .find()
-        .where('stop_id').in(stop_ids)
-        .select('stop_id stop_lat stop_lon -_id')
-        .exec(function (e, stops) {
-            if (e) {
-                debug(e, "getBusStopLatLon - error");
-                cb(err, 'lookupStopIds');
-            } else {
-                resolved_stops.push(stops);
-                cb(null, 'lookupStopIds');
-            }
-        });
-}
-
-function handleError(e) {
-    console.error(e || 'Unknown Error');
-    process.exit(1)
-}

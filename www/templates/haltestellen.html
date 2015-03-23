@@ -1,7 +1,6 @@
 <ion-view title={{title}} ng-controller="HaltestellenCtrl">
 
     <ion-content scroll="false">
-
         <map id="map" center="[51.5327604, 9.9352051]"
              data-tap-disabled="true"
              street-view-control="false"
@@ -9,17 +8,20 @@
              zoom-control="true"
              zoom-control-options="{style:'SMALL', position:'RIGHT_BOTTOM'}">
         </map>
+
     </ion-content>
-    <ion-footer-bar class = "bar bar-footer bar-balanced bar-dark">
-        <div class = "title"
-             ng-hide = "selected_stop.stop_name">
-            Wählen Sie Ihre Zielhaltestelle</div>
-        <div class = "title"
-             ng-show = "selected_stop.stop_name">
-            {{selected_stop.stop_name}}</div>
-        <a class = "button button-icon icon ion-clock"
-           ng-show = selected_stop.times
-           ng-click = openModal()>
+    <ion-footer-bar class="bar bar-footer bar-balanced bar-dark">
+        <div class="title"
+             ng-hide="selected_stop.stop_name">
+            Wählen Sie Ihre Zielhaltestelle
+        </div>
+        <div class="title"
+             ng-show="selected_stop.stop_name">
+            {{selected_stop.stop_name}}
+        </div>
+        <a class="button button-icon icon ion-clock"
+           ng-show=selected_stop.times
+           ng-click=openModal()>
         </a>
     </ion-footer-bar>
 </ion-view>

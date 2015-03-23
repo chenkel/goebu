@@ -1,18 +1,20 @@
+"use strict";
+
 module.exports = {
     isInt: function (n) {
-        return typeof n == 'number' && n % 1 == 0;
+        return typeof n === "number" && n % 1 === 0;
     },
 
     getDayName: function (date) {
-        var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         return days[date.getDay()];
     },
 
     formatDay: function (date) {
-        var day = (date.getDate() < 10) ? '' + '0' + date.getDate() : date.getDate()
-            , month = ((date.getMonth() + 1) < 10) ? '' + '0' + (date.getMonth() + 1) : (date.getMonth() + 1)
-            , year = date.getFullYear();
-        return '' + year + month + day;
+        var day = (date.getDate() < 10) ? "" + "0" + date.getDate() : date.getDate(),
+            month = ((date.getMonth() + 1) < 10) ? "" + "0" + (date.getMonth() + 1) : (date.getMonth() + 1),
+            year = date.getFullYear();
+        return "" + year + month + day;
     },
 
     timeToSeconds: function (time) {
@@ -20,8 +22,8 @@ module.exports = {
         if (time instanceof Date) {
             timeParts = [time.getHours(), time.getMinutes(), time.getSeconds()];
         } else {
-            timeParts = time.split(':');
-            if (timeParts.length != 3) {
+            timeParts = time.split(":");
+            if (timeParts.length !== 3) {
                 return null;
             }
         }
@@ -34,26 +36,54 @@ module.exports = {
         //if (seconds.match(/\d+:\d+:\d+/)[0]) {
         if (typeof seconds !== "undefined") {
 
-            if (typeof seconds !== 'number') {
+            if (typeof seconds !== "number") {
                 if (seconds.match(/\d+:\d+/) || seconds.match(/\d+:\d+:\d+/)) {
                     return seconds;
                 } else {
                     return null;
                 }
             } else {
-                var hour = Math.floor(seconds / (60 * 60))
-                    , minute = Math.floor((seconds - hour * (60 * 60)) / 60)
-                    , second = seconds - hour * (60 * 60) - minute * 60;
-                //return ((hour < 10) ? '' + '0' + hour : hour) + ':' +
-                //    ((minute < 10) ? '' + '0' + minute : minute) + ':' +
-                //    ((second < 10) ? '' + '0' + second : second);
+                var hour = Math.floor(seconds / (60 * 60)),
+                    minute = Math.floor((seconds - hour * (60 * 60)) / 60);
+                //second = seconds - hour * (60 * 60) - minute * 60;
+                //return ((hour < 10) ? "" + "0" + hour : hour) + ":" +
+                //    ((minute < 10) ? "" + "0" + minute : minute) + ":" +
+                //    ((second < 10) ? "" + "0" + second : second);
 
-
-                return ((hour < 10) ? '' + '0' + hour : hour) + ':' +
-                    ((minute < 10) ? '' + '0' + minute : minute);
+                return ((hour < 10) ? "" + "0" + hour : hour) + ":" +
+                    ((minute < 10) ? "" + "0" + minute : minute);
             }
         }
 
+    },
+    checkRequiredArrays: function (arrObj, cb) {
+        for (var desc in arrObj) {
+            if (arrObj.hasOwnProperty(desc)) {
+                if (typeof arrObj[desc] === 'undefined' || arrObj[desc] === null || arrObj[desc].length === 0) {
+                    global.log.error(desc);
+                    cb(new Error(desc), null);
+                }
+            }
+        }
+    },
+    checkAndInitiateMissingArrays: function (obj, arrays){
+        for (var i = 0, len = arrays.length; i < len; i++) {
+            if (typeof obj[arrays[i]] === 'undefined' || obj[arrays[i]] === null){
+                global.log.debug(arrays[i] + " undefined. instantiating array now!");
+                obj[arrays[i]] = [];
+            }
+        }
+        return obj;
+    },
+    returnResults: function (cb) {
+        return function (e, res) {
+            if (!!e) {
+                global.log.error(e.message);
+                cb(e, null);
+            } else {
+                cb(null, res);
+            }
+        };
     }
 
 };

@@ -1,30 +1,27 @@
+"use strict";
+
+var env = process.env.NODE_ENV || 'production';
+
+global.config = require('./config')(env);
+global.log = require('./helper/logger');
+
 var express = require('express'),
-    path = require('path'),
-    favicon = require('serve-favicon'),
     logger = require('morgan'),
     cookieParser = require('cookie-parser'),
     bodyParser = require('body-parser'),
     cors = require('cors'),
     compress = require('compression'),
-    routes = require('./routes/index'),
     api = require('./routes/api'),
     app = express();
 
 app.use(cors());
 app.use(compress());
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-
-app.use(favicon(__dirname + '/public/favicon.ico'));
-app.use(logger('common'));
+app.use(logger('[:date[clf]]>  :url  <[:status|:method|:http-version] :response-time ms'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', routes);
 app.use('/api', api);
 
 // catch 404 and forward to error handler
@@ -39,9 +36,9 @@ app.use(function (req, res, next) {
 // development error handler
 // will print stacktrace
 if (app.get('env') === 'development') {
-    app.use(function (err, req, res, next) {
+    app.use(function (err, req, res) {
         res.status(err.status || 500);
-        res.render('error', {
+        res.json({
             message: err.message,
             error: err
         });
@@ -50,11 +47,10 @@ if (app.get('env') === 'development') {
 
 // production error handler
 // no stacktraces leaked to user
-app.use(function (err, req, res, next) {
+app.use(function (err, req, res) {
     res.status(err.status || 500);
-    res.render('error', {
+    res.json({
         message: err.message,
-        //error: {}
         error: err
     });
 });

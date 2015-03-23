@@ -16,7 +16,7 @@ var invocation = (require.main === module) ? 'direct' : 'required';
 var config = {};
 if (invocation === 'direct') {
     try {
-        config = require('../config.js');
+        config = require('../config.js')();
     } catch (e) {
         handleError(new Error('Cannot find config.js'));
     }
