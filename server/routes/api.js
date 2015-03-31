@@ -91,7 +91,7 @@ router.get("/shapes/:agency/direction/:direction_id/stop/:stop_id", function (re
     var agency_key = req.params.agency,
         stop_id = req.params.stop_id,
         direction_id = parseInt(req.params.direction_id, 10);
-    gtfs.getAllLiveBusShapes(agency_key, stop_id, direction_id, function (e, data) {
+    gtfs.getAllLiveBusShapes(agency_key, null, direction_id, stop_id, function (e, data) {
         if (e) {
             global.log.error(e.message);
             return next(e);
@@ -100,6 +100,19 @@ router.get("/shapes/:agency/direction/:direction_id/stop/:stop_id", function (re
     });
 });
 
+router.get("/shapes/:agency/route/:route_id/direction/:direction_id/stop/:stop_id", function (req, res, next) {
+    var agency_key = req.params.agency,
+        stop_id = req.params.stop_id,
+        route_id = req.params.route_id,
+        direction_id = parseInt(req.params.direction_id, 10);
+    gtfs.getAllLiveBusShapes(agency_key, route_id, direction_id, stop_id, function (e, data) {
+        if (e) {
+            global.log.error(e.message);
+            return next(e);
+        }
+        res.send(data || {error: "No live bus shapes for agency combination."});
+    });
+});
 
 /* Stoplist */
 router.get("/stops/:agency/route/:route_id/direction/:direction_id", function (req, res, next) {
@@ -115,7 +128,6 @@ router.get("/stops/:agency/route/:route_id/direction/:direction_id", function (r
     });
 });
 
-
 router.get("/stops/:agency/:route_id", function (req, res, next) {
     var agency_key = req.params.agency,
         route_id = req.params.route_id;
@@ -128,15 +140,17 @@ router.get("/stops/:agency/:route_id", function (req, res, next) {
 });
 
 //
-//router.get("/stopsNearby/:lat/:lon/:radiusInMiles", function (req, res, next) {
-//    var lat = req.params.lat
-//        , lon = req.params.lon;
-//    var radius = req.params.radiusInMiles;
-//    gtfs.getStopsByDistance(lat, lon, radius, function (e, data) {
-//        if (e) return next(e);
-//        res.send(data || {error: "No stops within radius of " + radius + " miles"});
-//    });
-//});
+router.get("/stopsNearby/:lat/:lon/:radiusInMiles", function (req, res, next) {
+    var lat = req.params.lat,
+        lon = req.params.lon;
+    var radius = req.params.radiusInMiles;
+    gtfs.getStopsByDistance(lat, lon, radius, function (e, data) {
+        if (e) {
+            return next(e);
+        }
+        res.send(data || {error: "No stops within radius of " + radius + " miles"});
+    });
+});
 //
 //
 //router.get("/stopsNearby/:lat/:lon", function (req, res, next) {
@@ -147,7 +161,6 @@ router.get("/stops/:agency/:route_id", function (req, res, next) {
 //        res.send(data || {error: "No stops within default radius"});
 //    });
 //});
-
 
 /* Times */
 var return_times_cb = function (res, next) {
@@ -192,6 +205,5 @@ router.get("/times/:agency/route/:route_id/direction/:direction_id/stop/:stop_id
         direction_id = parseInt(req.params.direction_id, 10);
     gtfs.getTimesByStop(agency_key, route_id, stop_id, direction_id, return_times_cb(res, next));
 });
-
 
 module.exports = router;

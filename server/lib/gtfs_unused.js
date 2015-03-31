@@ -1,35 +1,6 @@
 //Shape = db.model("Shape"),
 //
-//getStopsByDistance: function (lat, lon, radius, cb) {
-//    //gets all stops within a radius
-//
-//
-//    if (_.isFunction(radius)) {
-//        cb = radius;
-//        radius = 1; //default is 1 mile
-//    }
-//
-//    var results = [],
-//        radiusInDegrees = Math.round(radius / 69 * 100000) / 100000;
-//
-//    lat = parseFloat(lat);
-//    lon = parseFloat(lon);
-//
-//
-//    Stop
-//        .where("loc")
-//        .near(lon, lat).maxDistance(radiusInDegrees)
-//        .select("stop_id stop_name stop_lat stop_lon -_id")
-//        .exec(function (e, stops) {
-//            if (e) {
-//                log.debug(e, "getStopsByDistance - error");
-//                cb(e, null);
-//            } else {
-//                results.push({direction_id: 0, stops: stops || []});
-//                cb(e, results);
-//            }
-//        });
-//},
+
 //
 //
 //findBothDirectionNames: function (agency_key, route_id, cb) {

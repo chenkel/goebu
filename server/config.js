@@ -18,7 +18,8 @@ var conf = {
             //'auckland-transport'
             {
                 agency_key: 'goevb',
-                url: 'https://www.dropbox.com/s/ec8bgs52wckrsh0/latest.zip?dl=1'
+                //url: 'https://www.dropbox.com/s/z9j15ompw08auh0/latest.zip?dl=1'
+                url: 'https://www.dropbox.com/s/z9j15ompw08auh0/latest.zip?dl=1'
             }
         ],
         server_host: 'http://goebu.christopherhenkel.de:3000/',

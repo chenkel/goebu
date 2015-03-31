@@ -1,23 +1,24 @@
 "use strict";
-//const host = "http://goebu.christopherhenkel.de:3000/";
-var host = "http://localhost:3000/";
+var host = "http://goebu.christopherhenkel.de:3000/";
+//var host = "http://localhost:3000/";
 
 //$compile
 angular.module("starter.controllers", ["ngMap"])
     .controller("HaltestellenCtrl", function ($scope, $ionicLoading, $ionicModal, $http, $stateParams, $timeout) {
         var url = "";
-        var buslinienId = 0;
-        var direction_id = 1;
+        var route_id = 22;
+        $scope.direction_id = 1;
 
         if (!$stateParams.buslinienId) {
             $stateParams.buslinienId = 0;
             $scope.title = "Alle Haltestellen";
             url = host + "api/stopsNearby/51.5327604/9.9352051/10";
         } else {
-            buslinienId = $stateParams.buslinienId;
-            url = host + "api/stops/goevb/route/" + buslinienId + "/direction/" + direction_id;
-            $scope.title = "Haltestellen der Linie " + buslinienId;
+            route_id = $stateParams.buslinienId;
+            url = host + "api/stops/goevb/route/" + route_id + "/direction/" + $scope.direction_id;
+            $scope.title = "Haltestellen der Linie " + route_id;
         }
+
 
         var liveBusPositions = [];
         var stop_markers = [];
@@ -28,19 +29,22 @@ angular.module("starter.controllers", ["ngMap"])
             map = gmap;
 
             $http.get(url)
+
                 .success(function (data) {
-                    if (data && data.stops[direction_id]) {
+                    if (data) {
+
                         var bounds = new google.maps.LatLngBounds();
-                        var stops = data.stops[direction_id];
+                        var stops = data.stops[$scope.direction_id];
                         for (var i = 0, len = stops.length; i < len; i++) {
                             stop_markers[i] = new google.maps.Marker({
                                 title: stops[i].stop_name,
                                 position: new google.maps.LatLng(stops[i].stop_lat, stops[i].stop_lon),
-                                icon: "img/" + stops[i].icon + ".png"
+                                icon: "img/bushaltestelle.png"
                             });
                             bounds.extend(new google.maps.LatLng(stops[i].stop_lat, stops[i].stop_lon));
                             stop_markers[i].setMap(map);
                             stop_markers[i].stop_name = stops[i].stop_name;
+                            stop_markers[i].stop_desc = stops[i].stop_desc;
                             stop_markers[i].stop_id = stops[i].stop_id;
                             stop_markers[i].stop_lat = stops[i].stop_lat;
                             stop_markers[i].stop_lon = stops[i].stop_lon;
@@ -70,10 +74,25 @@ angular.module("starter.controllers", ["ngMap"])
             });
         }.bind($scope);
 
+        $scope.changeDirection = function () {
+            if ($scope.direction_id === 1){
+                $scope.direction_id = 2;
+            } else {
+                $scope.direction_id = 1;
+            }
+
+            if($scope.selected_stop && $scope.selected_stop.stop_id){
+                $timeout.cancel($scope.live_bus_position_timer);
+                $scope.updateBusMarker(function () {
+                    map.fitBounds(live_bus_bounds);
+                });
+                $scope.startLiveBusMarker();
+            }
+        };
         $scope.getStopTimes = function (cb) {
             // only show human readable format HH:MM
             $http.get(host + "api/times/goevb/route/" +
-            buslinienId + "/stop/" + $scope.selected_stop.stop_id)
+            route_id + "/direction/" + $scope.direction_id + "/stop/" + $scope.selected_stop.stop_id)
                 .success(function (data) {
                     if (data !== null) {
                         if (!data.times || data.times.length < 1) {
@@ -94,7 +113,9 @@ angular.module("starter.controllers", ["ngMap"])
         };
 
         $scope.updateBusMarker = function (cb) {
-            $http.get(host + "api/shapes/goevb/direction/" + direction_id + "/stop/"+ $scope.selected_stop.stop_id )
+            $http.get(host + "api/shapes/goevb/route/" + route_id +
+            "/direction/" + $scope.direction_id +
+            "/stop/" + $scope.selected_stop.stop_id)
                 .success(function (result) {
                     if (result.live_sequences && result.live_sequences.length > 0) {
                         var data = result.live_sequences;
@@ -136,6 +157,9 @@ angular.module("starter.controllers", ["ngMap"])
                             cb();
                         }
                     } else {
+                        for (var k = 0, len3 = liveBusPositions.length; k < len3; k++) {
+                            liveBusPositions[k].setMap(null);
+                        }
                         console.log("No live bus information available");
                     }
                 }.bind($scope))

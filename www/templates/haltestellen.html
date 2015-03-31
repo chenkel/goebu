@@ -1,5 +1,9 @@
-<ion-view title={{title}} ng-controller="HaltestellenCtrl">
+<ion-view class="align-left" title={{title}} ng-controller="HaltestellenCtrl">
+    <ion-nav-buttons side="right">
+        <!--<button class="button button-icon icon ion-clock" ng-click=changeDirection()>-->
 
+        </button>
+    </ion-nav-buttons>
     <ion-content scroll="false">
         <map id="map" center="[51.5327604, 9.9352051]"
              data-tap-disabled="true"
@@ -11,13 +15,13 @@
 
     </ion-content>
     <ion-footer-bar class="bar bar-footer bar-balanced bar-dark">
-        <div class="title"
-             ng-hide="selected_stop.stop_name">
+        <div class="title align-left"
+             ng-hide="selected_stop.stop_desc">
             Wählen Sie Ihre Zielhaltestelle
         </div>
-        <div class="title"
-             ng-show="selected_stop.stop_name">
-            {{selected_stop.stop_name}}
+        <div class="title align-left"
+             ng-show="selected_stop.stop_desc">
+            {{selected_stop.stop_desc}}
         </div>
         <a class="button button-icon icon ion-clock"
            ng-show=selected_stop.times

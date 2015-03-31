@@ -1,13 +1,13 @@
-var request = require('request')
-    , exec = require('child_process').exec
-    , fs = require('fs')
-    , path = require('path')
-    , csv = require('csv')
-    , async = require('async')
-    , unzip = require('unzip2')
-    , downloadDir = 'downloads'
-    , Db = require('mongodb').MongoClient
-    , q;
+var request = require('request'),
+    exec = require('child_process').exec,
+    fs = require('fs'),
+    path = require('path'),
+    csv = require('csv'),
+    async = require('async'),
+    unzip = require('unzip2'),
+    downloadDir = 'downloads',
+    Db = require('mongodb').MongoClient,
+    q;
 
 
 // check if this file was invoked directthrough commandline or required as an export
@@ -261,8 +261,12 @@ function main(config, callback) {
                                         line.loc = [line.shape_pt_lon, line.shape_pt_lat];
                                     }
 
-                                    line.departure_time = convertToSeconds(line.departure_time);
-                                    line.arrival_time = convertToSeconds(line.arrival_time);
+                                    if (line.departure_time) {
+                                        line.departure_time = convertToSeconds(line.departure_time);
+                                    }
+                                    if (line.departure_time) {
+                                        line.arrival_time = convertToSeconds(line.arrival_time);
+                                    }
 
                                     //insert into db
                                     collection.insert(line, function (e, inserted) {

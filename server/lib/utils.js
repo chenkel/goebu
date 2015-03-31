@@ -59,18 +59,26 @@ module.exports = {
     checkRequiredArrays: function (arrObj, cb) {
         for (var desc in arrObj) {
             if (arrObj.hasOwnProperty(desc)) {
-                if (typeof arrObj[desc] === 'undefined' || arrObj[desc] === null || arrObj[desc].length === 0) {
+                if (
+                    typeof arrObj[desc] === 'undefined' ||
+                    arrObj[desc] === null || !arrObj[desc] ||
+                    arrObj[desc].length === 0
+                ) {
                     global.log.error(desc);
                     cb(new Error(desc), null);
                 }
             }
         }
     },
-    checkAndInitiateMissingArrays: function (obj, arrays){
-        for (var i = 0, len = arrays.length; i < len; i++) {
-            if (typeof obj[arrays[i]] === 'undefined' || obj[arrays[i]] === null){
-                global.log.debug(arrays[i] + " undefined. instantiating array now!");
-                obj[arrays[i]] = [];
+    checkAndInitiateMissingVars: function (obj, objectsToAdd, typeToAdd) {
+        for (var i = 0, len = objectsToAdd.length; i < len; i++) {
+            if (typeof obj[objectsToAdd[i]] === 'undefined' || obj[objectsToAdd[i]] === null) {
+                //global.log.debug("Instantiating undefined " + objectsToAdd[i]);
+                if (!typeToAdd || typeToAdd === "array") {
+                    obj[objectsToAdd[i]] = [];
+                } else if (typeToAdd === 'object') {
+                    obj[objectsToAdd[i]] = {};
+                }
             }
         }
         return obj;

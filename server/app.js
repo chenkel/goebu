@@ -10,14 +10,15 @@ var express = require('express'),
     cookieParser = require('cookie-parser'),
     bodyParser = require('body-parser'),
     cors = require('cors'),
-    compress = require('compression'),
+    //compress = require('compression'),
     api = require('./routes/api'),
     app = express();
 
 app.use(cors());
-app.use(compress());
+// TODO: turn on in production
+//app.use(compress());
 
-app.use(logger('[:date[clf]]>  :url  <[:status|:method|:http-version] :response-time ms'));
+app.use(logger('[:date[clf]]>  :url  <[:status|:method|:http-version] :res[content-length]B :response-time ms'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());

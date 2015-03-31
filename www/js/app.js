@@ -34,15 +34,15 @@ angular.module('starter', ['ionic', 'starter.controllers', 'ngCordova'])
                 controller: 'AppCtrl'
             })
 
-            //.state('app.haltestellen', {
-            //    url: "/haltestellen",
-            //    views: {
-            //        'menuContent': {
-            //            templateUrl: "templates/haltestelle.html",
-            //            controller: 'HaltestelleCtrl'
-            //        }
-            //    }
-            //})
+            .state('app.haltestellen', {
+                url: "/haltestellen",
+                views: {
+                    'menuContent': {
+                        templateUrl: "templates/haltestellen.html",
+                        controller: 'HaltestellenCtrl'
+                    }
+                }
+            })
             .state('app.haltestelle', {
                 url: "/haltestelle/:buslinienId",
                 views: {
