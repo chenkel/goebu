@@ -30,7 +30,7 @@ ngMap.directive('mapLazyLoad', ['$compile', '$timeout', function($compile, $time
       /**
        * if already loaded, stop processing it
        */
-      if (document.querySelector('script[src="'+src+'"]')) {
+      if (document.querySelector('script[src="'+src+'?callback=lazyLoadCallback"]')) {
         return false;
       }
 
@@ -44,10 +44,14 @@ ngMap.directive('mapLazyLoad', ['$compile', '$timeout', function($compile, $time
               $compile(element.contents())(scope);
             }, 100);
           };
-
-          var scriptEl = document.createElement('script');
-          scriptEl.src = src + '?callback=lazyLoadCallback';
-          document.body.appendChild(scriptEl);
+          if(window.google === undefined || window.google.maps === undefined) {
+            var scriptEl = document.createElement('script');
+            scriptEl.src = src + (src.indexOf('?') > -1 ? '&' : '?') + 'callback=lazyLoadCallback';
+            document.body.appendChild(scriptEl);
+          } else {
+            element.html(savedHtml);
+            $compile(element.contents())(scope);
+          }
         }
       };
     }

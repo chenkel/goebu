@@ -20,5 +20,8 @@
     "type": "git",
     "url": "https://github.com/chenkel/goebu.git"
   },
-  "cordovaPlugins": []
+  "cordovaPlugins": [
+    "plugin.google.maps"
+  ],
+  "cordovaPlatforms": []
 }

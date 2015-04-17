@@ -2,7 +2,7 @@
 
 var async = require("async"),
     mongoose = require("mongoose"),
-    _ = require("underscore"),
+//_ = require("underscore"),
     utils = require("./utils");
 
 //var timeCheatSet = 59700;
@@ -10,7 +10,6 @@ var async = require("async"),
 
 var timeCheat = null,
     timeCheatSet = null;
-
 
 if (typeof timeCheatSet !== 'undefined' && timeCheatSet !== null) {
     global.log.warn("[Time Cheat activated] Time is set to: ", timeCheatSet, " -->", utils.secondsToTime(timeCheatSet));
@@ -42,9 +41,10 @@ require("../models/StopTime");
 require("../models/Transfer");
 require("../models/Trip");
 
-var Agency = db.model("Agency"),
-    Route = db.model("Route"),
-    Stop = db.model("Stop"),
+var Stop = db.model("Stop"),
+
+//Agency = db.model("Agency"),
+//Route = db.model("Route"),
 
     StopTime = db.model("StopTime"),
     Trip = db.model("Trip"),
@@ -82,7 +82,6 @@ function findServices(goebu_params, cb) {
         calendar_date_query = {},
         todayFormatted = utils.formatDay(today),
         calendar_date_ids = [];
-
 
     if (dateCheat) {
         global.log.warn("Applying date cheat");
@@ -144,12 +143,10 @@ function findServices(goebu_params, cb) {
                                 calendar_date_ids.push(service_dates[i].service_id);
                                 //goebu_params.service_ids.push(service_dates[i].service_id);
                             }
-                            return callback(null, goebu_params);
-                        } else {
-                            // TODO: decide if Error or normal response is fine
-                            global.log.error("No Service for this date");
-                            return callback(new Error("No Service for this date"), goebu_params);
+
                         }
+                        return callback(null, goebu_params);
+
                     }
                 });
         }
@@ -213,7 +210,9 @@ function findTripsWithServiceRouteDirection(goebu_params, cb) {
             global.log.error(e.message);
             return cb(e, null);
         } else {
-            goebu_params = utils.checkAndInitiateMissingVars(goebu_params, ['trip_ids']);
+            if (!goebu_params.trip_ids) {
+                goebu_params.trip_ids = [];
+            }
             for (var i = 0, len = trips.length; i < len; i++) {
                 if (typeof trips[i].trip_id !== 'undefined' && trips[i].trip_id !== null) {
                     if (!goebu_params.trip_ids[trips[i].direction_id]) {
@@ -256,8 +255,6 @@ function findStopTimesForStopWithTripsTimeHorizon(goebu_params, cb) {
     if (typeof timeCheat !== 'undefined' && timeCheat !== null) {
         timeInSeconds = timeInSeconds + timeCheat;
     }
-
-
 
     goebu_params.now = utils.secondsToTime(timeInSeconds);
 
@@ -422,6 +419,7 @@ function getStopsByStopIds(goebu_params, cb) {
  * optional:
  * @param {number[]} [goebu_params.direction_ids]
  * @param {string} [goebu_params.agency_key]
+ * @param {Object[]} [goebu_params.stops]
  * @param {Object[]} [goebu_params.stop_ids]
  *
  * @return {Object[]} [goebu_params.stops]
@@ -433,7 +431,9 @@ function getStopIdsByTripIds(goebu_params, cb) {
         return cb(new Error("goebu_params.trip_ids is undefined or empty."), goebu_params);
     }
 
-    goebu_params = utils.checkAndInitiateMissingVars(goebu_params, ['stops', 'stop_ids'], "object");
+    goebu_params.stops = {};
+    goebu_params.stop_ids = {};
+
     if (goebu_params.direction_id) {
         goebu_params.direction_ids = [goebu_params.direction_id];
     }
@@ -579,9 +579,6 @@ function findDistinctSequencesForTimes(goebu_params, cb) {
             goebu_params.distinct_sequences.push(goebu_params.future_times[i]);
         }
     }
-    if ((goebu_params.distinct_sequences.length <= 0)) {
-        global.log.warn("no distinct sequences found in findDistinctSequencesForTimes");
-    }
 
     return cb(null, goebu_params);
 }
@@ -605,36 +602,39 @@ function findDistinctSequencesForTimes(goebu_params, cb) {
 function constructLiveSequences(goebu_params, cb) {
     if (!goebu_params.past_times || goebu_params.past_times.length === 0) {
         return cb(new Error("goebu_params.past_times is undefined or empty."), goebu_params);
-    } else if (!goebu_params.distinct_sequences || goebu_params.distinct_sequences.length === 0) {
+    }
+    if (!goebu_params.distinct_sequences || goebu_params.distinct_sequences.length === 0) {
         return cb(new Error("goebu_params.distinct_sequences is undefined or empty."), goebu_params);
-    } else if (!goebu_params.direction_id || goebu_params.direction_id.length === 0) {
+    }
+    if (!goebu_params.direction_id || goebu_params.direction_id.length === 0) {
         return cb(new Error("goebu_params.direction_id is undefined or empty."), goebu_params);
     }
 
-    goebu_params = utils.checkAndInitiateMissingVars(goebu_params, ['live_sequences', 'live_sequences_stop_ids']);
+    goebu_params.live_sequences = [];
+    goebu_params.live_sequences_stop_ids = [];
 
-    if (goebu_params.distinct_sequences.length === 1) {
-        if (goebu_params.distinct_sequences[0].sequence === 0) {
-            goebu_params.live_sequences.push({
-                "next": goebu_params.distinct_sequences[0],
-                "previous": goebu_params.distinct_sequences[0]
-            });
-            goebu_params.live_sequences_stop_ids.push(goebu_params.distinct_sequences[0].stop_id);
-            return cb(null, goebu_params);
-        }
-    }
-    for (var i = 0, len = goebu_params.distinct_sequences.length; i < len; i++) {
-        var past_time_found = false;
+    var past_time_found = false;
 
+    if (goebu_params.distinct_sequences.length === 1 && goebu_params.distinct_sequences[0].sequence === 0) {
+        goebu_params.live_sequences.push({
+            "next": goebu_params.distinct_sequences[0],
+            "previous": goebu_params.distinct_sequences[0]
+        });
+        goebu_params.live_sequences_stop_ids.push(goebu_params.distinct_sequences[0].stop_id);
+        return cb(null, goebu_params);
+
+    } else {
         var nPast_times = goebu_params.past_times.length - 1;
-        for (var j = nPast_times; j >= 0; j--) {
-            if (past_time_found) {
-                break;
-            }
-            var sequence_diff = Math.abs(goebu_params.past_times[j].sequence -
-            goebu_params.distinct_sequences[i].sequence);
-            if (sequence_diff <= 3) {
-                if (goebu_params.direction_id === 1) {
+        for (var i = 0, len = goebu_params.distinct_sequences.length; i < len; i++) {
+            past_time_found = false;
+
+            for (var j = nPast_times; j >= 0; j--) {
+                if (past_time_found) {
+                    break;
+                }
+                var sequence_diff = Math.abs(goebu_params.past_times[j].sequence -
+                goebu_params.distinct_sequences[i].sequence);
+                if (sequence_diff <= 3 && goebu_params.direction_id > 0) {
                     if (goebu_params.past_times[j].sequence < goebu_params.distinct_sequences[i].sequence) {
                         goebu_params.live_sequences.push({
                             "next": goebu_params.distinct_sequences[i],
@@ -644,22 +644,10 @@ function constructLiveSequences(goebu_params, cb) {
                         goebu_params.live_sequences_stop_ids.push(goebu_params.past_times[j].stop_id);
                         past_time_found = true;
                     }
-                } else if (goebu_params.direction_id === 2) {
-                    if (goebu_params.past_times[j].sequence > goebu_params.distinct_sequences[i].sequence) {
-                        goebu_params.live_sequences.push({
-                            "next": goebu_params.distinct_sequences[i],
-                            "previous": goebu_params.past_times[j]
-                        });
-                        goebu_params.live_sequences_stop_ids.push(goebu_params.distinct_sequences[i].stop_id);
-                        goebu_params.live_sequences_stop_ids.push(goebu_params.past_times[j].stop_id);
-                        past_time_found = true;
-                    }
-                } else {
-                    global.log.error("Unknown direction_id:" + goebu_params.direction_id);
                 }
             }
-        }
 
+        }
     }
 
     return cb(null, goebu_params);
@@ -757,7 +745,7 @@ function calculatePositionForLiveSequence(goebu_params, cb) {
         var today = new Date();
         var nowTimeInSeconds = utils.timeToSeconds(today); // minus 12 hours
         if (typeof timeCheat !== 'undefined' && timeCheat !== null) {
-            nowTimeInSeconds =  nowTimeInSeconds + timeCheat;
+            nowTimeInSeconds = nowTimeInSeconds + timeCheat;
         }
         var progress = (nowTimeInSeconds - goebu_params.live_sequences[i].previous.time) / time_total;
 
@@ -771,71 +759,71 @@ function calculatePositionForLiveSequence(goebu_params, cb) {
 }
 
 module.exports = {
-    /**
-     * agencies gets gets a list of all agencies
-     * @param cb
-     */
-    agencies: function (cb) {
-        Agency.find({}, cb);
-    },
-
-    /**
-     * getRoutesByAgency gets routes for one agency
-     * @param agency_key
-     * @param cb
-     */
-    getRoutesByAgency: function (agency_key, cb) {
-
-        Route.find({agency_key: agency_key}, cb);
-    },
-
-    /**
-     * getAgenciesByDistance gets all agencies within a radius.
-     * @param lat
-     * @param lon
-     * @param radius
-     * @param cb
-     */
-    getAgenciesByDistance: function (lat, lon, radius, cb) {
-        lat = parseFloat(lat);
-        lon = parseFloat(lon);
-
-        var radiusInDegrees = Math.round(radius / 69 * 100000) / 100000;
-
-        Agency
-            .where("agency_center")
-            .near(lon, lat).maxDistance(radiusInDegrees)
-            .exec(cb);
-    },
-
-    getStopsByDistance: function (lat, lon, radius, cb) {
-        //gets all stops within a radius
-
-        if (_.isFunction(radius)) {
-            cb = radius;
-            radius = 1; //default is 1 mile
-        }
-
-        var results = [],
-            radiusInDegrees = Math.round(radius / 69 * 100000) / 100000;
-
-        lat = parseFloat(lat);
-        lon = parseFloat(lon);
-
-        Stop
-            .where("loc")
-            .near(lon, lat).maxDistance(radiusInDegrees)
-            .select("stop_id stop_name stop_desc stop_lat stop_lon -_id")
-            .exec(function (e, stops) {
-                if (e) {
-                    global.log.debug(e, "getStopsByDistance - error");
-                    cb(e, null);
-                } else {
-                    results = {stops: stops || []};
-                    cb(e, results);
-                }
-            });
-    },
+    ///**
+    // * agencies gets gets a list of all agencies
+    // * @param cb
+    // */
+    //agencies: function (cb) {
+    //    Agency.find({}, cb);
+    //},
+    //
+    ///**
+    // * getRoutesByAgency gets routes for one agency
+    // * @param agency_key
+    // * @param cb
+    // */
+    //getRoutesByAgency: function (agency_key, cb) {
+    //
+    //    Route.find({agency_key: agency_key}, cb);
+    //},
+    //
+    ///**
+    // * getAgenciesByDistance gets all agencies within a radius.
+    // * @param lat
+    // * @param lon
+    // * @param radius
+    // * @param cb
+    // */
+    //getAgenciesByDistance: function (lat, lon, radius, cb) {
+    //    lat = parseFloat(lat);
+    //    lon = parseFloat(lon);
+    //
+    //    var radiusInDegrees = Math.round(radius / 69 * 100000) / 100000;
+    //
+    //    Agency
+    //        .where("agency_center")
+    //        .near(lon, lat).maxDistance(radiusInDegrees)
+    //        .exec(cb);
+    //},
+    //
+    //getStopsByDistance: function (lat, lon, radius, cb) {
+    //    //gets all stops within a radius
+    //
+    //    if (_.isFunction(radius)) {
+    //        cb = radius;
+    //        radius = 1; //default is 1 mile
+    //    }
+    //
+    //    var results = [],
+    //        radiusInDegrees = Math.round(radius / 69 * 100000) / 100000;
+    //
+    //    lat = parseFloat(lat);
+    //    lon = parseFloat(lon);
+    //
+    //    Stop
+    //        .where("loc")
+    //        .near(lon, lat).maxDistance(radiusInDegrees)
+    //        .select("stop_id stop_name stop_desc stop_lat stop_lon -_id")
+    //        .exec(function (e, stops) {
+    //            if (e) {
+    //                global.log.debug(e, "getStopsByDistance - error");
+    //                cb(e, null);
+    //            } else {
+    //                results = {stops: stops || []};
+    //                cb(e, results);
+    //            }
+    //        });
+    //},
 
     /**
      * getStopsByRoute gets stops for one route
@@ -858,9 +846,9 @@ module.exports = {
                 getStopIdsByTripIds,
                 getStopsByStopIds,
                 function (results, cb) {
-                    var tmpResults = results;
-                    results = {};
-                    results.stops = tmpResults.stops;
+                    //var tmpResults = results;
+                    //results = {};
+                    //results.stops = tmpResults.stops;
                     cb(null, results);
                 }
             ],
@@ -909,6 +897,7 @@ module.exports = {
      *
      * optional:
      * @param [agency_key]
+     * @param route_id
      * @param [stop_id]
      * @param [direction_id]
      *

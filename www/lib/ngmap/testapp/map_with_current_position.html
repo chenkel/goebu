@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html ng-app="ngMap">
+<html>
 <head>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 <script src="https://maps.google.com/maps/api/js?sensor=false"></script>
@@ -15,9 +15,21 @@
 <script src="../app/scripts/services/navigator_geolocation.js"></script>
 <script src="../app/scripts/services/attr2_options.js"></script>
 <!-- endbuild -->
+<script>
+  angular.module('myApp',['ngMap']).controller('MyCtrl', function($scope) {
+    $scope.message = 'You can not hide. :)';
+    $scope.callbackFunc = function(param) {
+      console.log('I know where '+ param +' are.' + $scope.message);
+    };
+  });
+</script>
 </head>
 
-<body>
-    <map geo-fallback-center="[40.74, -74.18]" />
+<body ng-app="myApp" ng-controller="MyCtrl">
+  NOTE: open console, then see the message from callback
+  <map center='current-position' 
+    geo-fallback-center="[40.74, -74.18]" 
+    geo-callback="callbackFunc('you')"
+    ></map>
 </body>
 </html>

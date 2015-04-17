@@ -1,4 +1,3 @@
-/*jshint -W030*/
 /**
  * @ngdoc directive
  * @name info-window 
@@ -13,6 +12,7 @@
  *
  * @param {Boolean} visible Indicates to show it when map is initialized
  * @param {Boolean} visible-on-marker Indicates to show it on a marker when map is initialized
+ * @param {Expression} geo-callback if position is an address, the expression is will be performed when geo-lookup is successful. e.g., geo-callback="showDetail()"
  * @param {String} &lt;InfoWindowOption> Any InfoWindow options,
  *        https://developers.google.com/maps/documentation/javascript/reference?csw=1#InfoWindowOptions  
  * @param {String} &lt;InfoWindowEvent> Any InfoWindow events, https://developers.google.com/maps/documentation/javascript/reference
@@ -35,142 +35,134 @@
  *    </info-window>
  *  </map>
  */
-ngMap.directive('infoWindow', ['Attr2Options', '$compile', '$timeout', function(Attr2Options, $compile, $timeout)  {
-  var parser = Attr2Options;
+/* global google */
+(function() {
+  'use strict';
 
-  var getInfoWindow = function(options, events, element) {
-    var infoWindow;
+   var infoWindow = function(Attr2Options, $compile, $timeout, $parse)  {
+     var parser = Attr2Options;
 
-    /**
-     * set options
-     */
-    if (options.position && 
-      !(options.position instanceof google.maps.LatLng)) {
-      var address = options.position;
-      delete options.position;
-      infoWindow = new google.maps.InfoWindow(options);
-      var callback = function() {
-        infoWindow.open(infoWindow.map);
-      }
-      parser.setDelayedGeoLocation(infoWindow, 'setPosition', address, {callback: callback});
-    } else {
-      infoWindow = new google.maps.InfoWindow(options);
-    }
+     var getInfoWindow = function(options, events, element) {
+       var infoWindow;
 
-    /**
-     * set events
-     */
-    if (Object.keys(events).length > 0) {
-      console.log("infoWindow events", events);
-    }
-    for (var eventName in events) {
-      if (eventName) {
-        google.maps.event.addListener(infoWindow, eventName, events[eventName]);
-      }
-    }
+       /**
+        * set options
+        */
+       if (options.position && !(options.position instanceof google.maps.LatLng)) {
+         delete options.position;
+       }
+       infoWindow = new google.maps.InfoWindow(options);
 
-    /**
-     * set template ane template-relate functions
-     * it must have a container element with ng-non-bindable
-     */
-    var template = element.html().trim();
-    if (angular.element(template).length != 1) {
-      throw "info-window working as a template must have a container";
-    }
-    infoWindow.__template = template.replace(/\s?ng-non-bindable[='"]+/,"");
+       /**
+        * set events
+        */
+       if (Object.keys(events).length > 0) {
+         console.log("infoWindow events", events);
+       }
+       for (var eventName in events) {
+         if (eventName) {
+           google.maps.event.addListener(infoWindow, eventName, events[eventName]);
+         }
+       }
 
-    infoWindow.__compile = function(scope) {
-      var el = $compile(infoWindow.__template)(scope);
-      scope.$apply();
-      infoWindow.setContent(el[0]);
-    };
+       /**
+        * set template ane template-relate functions
+        * it must have a container element with ng-non-bindable
+        */
+       var template = element.html().trim();
+       if (angular.element(template).length != 1) {
+         throw "info-window working as a template must have a container";
+       }
+       infoWindow.__template = template.replace(/\s?ng-non-bindable[='"]+/,"");
 
-    infoWindow.__eval = function(event) {
-      var template = infoWindow.__template;
-      var _this = this;
-      template = template.replace(/{{(event|this)[^;\}]+}}/g, function(match) {
-        var expression = match.replace(/[{}]/g, "").replace("this.", "_this.");
-        return eval(expression);
-      });
-      return template;
-    };
+       infoWindow.__compile = function(scope, anchor) {
+         anchor && (scope['this'] = anchor);
+         var el = $compile(infoWindow.__template)(scope);
+         infoWindow.setContent(el[0]);
+         scope.$apply();
+       };
 
-    return infoWindow;
-  };
+       infoWindow.__open = function(map, scope, anchor) {
+         $timeout(function() {
+           var tempTemplate = infoWindow.__template; // set template in a temporary variable
+           infoWindow.__compile(scope, anchor);
+           if (anchor && anchor.getPosition) {
+             infoWindow.open(map, anchor);
+           } else if (anchor && anchor instanceof google.maps.LatLng) {
+             infoWindow.open(map);
+             infoWindow.setPosition(anchor);
+           } else {
+             infoWindow.open(map);
+           }
+           infoWindow.__template = tempTemplate; // reset template to the object
+         });
+       };
 
-  return {
-    restrict: 'E',
-    require: '^map',
-    link: function(scope, element, attrs, mapController) {
-      element.css('display','none');
-      var orgAttrs = parser.orgAttributes(element);
-      var filtered = parser.filter(attrs);
-      var options = parser.getOptions(filtered, scope);
-      var events = parser.getEvents(scope, filtered);
-      console.log('infoWindow', 'options', options, 'events', events);
+       return infoWindow;
+     };
 
-      var infoWindow = getInfoWindow(options, events, element);
+     var linkFunc = function(scope, element, attrs, mapController) {
+       element.css('display','none');
+       var orgAttrs = parser.orgAttributes(element);
+       var filtered = parser.filter(attrs);
+       var options = parser.getOptions(filtered, scope);
+       var events = parser.getEvents(scope, filtered);
+       console.log('infoWindow', 'options', options, 'events', events);
 
-      mapController.addObject('infoWindows', infoWindow);
-      parser.observeAttrSetObj(orgAttrs, attrs, infoWindow); /* observers */
+       var address;
+       if (options.position && !(options.position instanceof google.maps.LatLng)) {
+         address = options.position;
+       }
+       var infoWindow = getInfoWindow(options, events, element);
+       if (address) {
+         mapController.getGeoLocation(address).then(function(latlng) {
+           infoWindow.setPosition(latlng);
+           infoWindow.__open(mapController.map, scope, latlng);
+           var geoCallback = attrs.geoCallback;
+           geoCallback && $parse(geoCallback)(scope);
+         });
+       }
 
-      // show InfoWindow when initialized
-      if (infoWindow.visible) {
-        //if (!infoWindow.position) { throw "Invalid position"; }
-        scope.$on('mapInitialized', function(evt, map) {
-          $timeout(function() {
-            infoWindow.__template = infoWindow.__eval.apply(this, [evt]);
-            infoWindow.__compile(scope);
-            infoWindow.map = map;
-            infoWindow.position && infoWindow.open(map);
-          });
-        });
-      }
+       mapController.addObject('infoWindows', infoWindow);
+       mapController.observeAttrSetObj(orgAttrs, attrs, infoWindow); /* observers */
 
-      // show InfoWindow on a marker  when initialized
-      if (infoWindow.visibleOnMarker) {
-        scope.$on('mapInitialized', function(evt, map) {
-          $timeout(function() {
-            var markerId = infoWindow.visibleOnMarker;
-            var marker = map.markers[markerId];
-            if (!marker) throw "Invalid marker id";
-            infoWindow.__template = infoWindow.__eval.apply(this, [evt]);
-            infoWindow.__compile(scope);
-            infoWindow.open(map, marker);
-          });
-        });
-      }
+       scope.$on('mapInitialized', function(evt, map) {
+         infoWindow.visible && infoWindow.__open(map, scope);
+         if (infoWindow.visibleOnMarker) {
+           var markerId = infoWindow.visibleOnMarker;
+           infoWindow.__open(map, scope, map.markers[markerId]);
+         }
+       });
 
-      /**
-       * provide showInfoWindow method to scope
-       */
-      scope.showInfoWindow  = scope.showInfoWindow ||
-        function(event, id, anchor) {
-          var infoWindow = mapController.map.infoWindows[id],
-		  tempTemplate = infoWindow.__template; // set template in a temporary variable
-          infoWindow.__template = infoWindow.__eval.apply(this, [event]);
-          infoWindow.__compile(scope);
-          if (anchor) {
-            infoWindow.open(mapController.map, anchor);
-          } else if (this.getPosition) {
-            infoWindow.open(mapController.map, this);
-          } else {
-            infoWindow.open(mapController.map);
-          }
-		  infoWindow.__template = tempTemplate; // reset template to the object
-        };
+       /**
+        * provide showInfoWindow method to scope
+        */
 
-      /**
-       * provide hideInfoWindow method to scope
-       */
-      scope.hideInfoWindow  = scope.hideInfoWindow ||
-        function(event, id, anchor) {
-          var infoWindow = mapController.map.infoWindows[id];
-          infoWindow.__template = infoWindow.__eval.apply(this, [event]);
-          infoWindow.__compile(scope);
-          infoWindow.close();
-        };
+       scope.showInfoWindow  = function(e, id, marker) {
+         var infoWindow = mapController.map.infoWindows[id];
+         var anchor = marker ? marker : (this.getPosition ? this : null);
+         infoWindow.__open(mapController.map, scope, anchor);
+       };
 
-    } //link
-  }; // return
-}]);// function
+       /**
+        * provide hideInfoWindow method to scope
+        */
+       scope.hideInfoWindow  = scope.hideInfoWindow ||
+         function(event, id) {
+           var infoWindow = mapController.map.infoWindows[id];
+           infoWindow.close();
+         };
+
+     }; //link
+
+     return {
+       restrict: 'E',
+       require: '^map',
+       link: linkFunc
+     }; 
+
+   }; // infoWindow
+   infoWindow.$inject = ['Attr2Options', '$compile', '$timeout', '$parse'];
+
+   angular.module('ngMap').directive('infoWindow', infoWindow); 
+})();
