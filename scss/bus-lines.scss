@@ -1,0 +1,56 @@
+.line-badge {
+  &.line-11, &.line-12 {
+    background-color: #FF8700;
+
+  }
+
+  &.line-21, &.line-22, &.line-23 {
+    background-color: #D70000;
+    color: white;
+  }
+
+
+  &.line-31, &.line-32 {
+    background-color: #7AF500;
+    color: #402200;
+  }
+
+  &.line-33 {
+    background-color: #53C900;
+    color: #402200;
+  }
+
+  &.line-41, &.line-42 {
+    background-color: #00FFFF;
+    color: #402200;
+  }
+
+  &.line-50 {
+    background-color: #137E08;
+
+  }
+
+  &.line-61, &.line-62 {
+    background-color: #860068;
+
+  }
+
+  &.line-71, &.line-72 {
+    background-color: #0D21FF;
+
+  }
+
+  &.line-73 {
+    background-color: #0F21FF;
+  }
+
+  &.line-80 {
+    background-color: #FFCC00;
+    color: #402200;
+  }
+
+  &.line-91, &.line-92 {
+    background-color: #8653D9;
+
+  }
+}

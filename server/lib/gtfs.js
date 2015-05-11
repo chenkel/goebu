@@ -5,8 +5,8 @@ var async = require("async"),
 //_ = require("underscore"),
     utils = require("./utils");
 
-//var timeCheatSet = 59700;
-//var timeCheat = timeCheatSet - utils.timeToSeconds(new Date());
+//var timeCheatSet = 57890,
+// timeCheat = timeCheatSet - utils.timeToSeconds(new Date());
 
 var timeCheat = null,
     timeCheatSet = null;
@@ -118,9 +118,10 @@ function findServices(goebu_params, cb) {
                         return callback(e, null);
                     } else {
                         if (services.length > 0) {
-                            for (var i = 0, len = services.length; i < len; i++) {
-                                goebu_params.service_ids.push(services[i].service_id);
-                            }
+                            // Thursday and Friday have two identical serivces with different ids.
+                            // Just choose the first one.
+                            goebu_params.service_ids.push(services[0].service_id);
+
                             return callback(null, goebu_params);
                         } else {
                             // TODO: decide if Error or normal response is fine
@@ -192,7 +193,6 @@ function findTripsWithServiceRouteDirection(goebu_params, cb) {
         tripQuery.route_id = goebu_params.route_id;
     }
     if ((goebu_params.direction_id === 1) || (goebu_params.direction_id === 2)) {
-        // TODO: add a new direction_id key to goebu_params.trip_ids
         tripQuery.direction_id = goebu_params.direction_id;
     } else {
         tripQuery.$or = [{direction_id: 1}, {direction_id: 2}];
@@ -215,10 +215,10 @@ function findTripsWithServiceRouteDirection(goebu_params, cb) {
             }
             for (var i = 0, len = trips.length; i < len; i++) {
                 if (typeof trips[i].trip_id !== 'undefined' && trips[i].trip_id !== null) {
-                    if (!goebu_params.trip_ids[trips[i].direction_id]) {
-                        goebu_params.trip_ids[trips[i].direction_id] = [];
-                    }
-                    goebu_params.trip_ids[trips[i].direction_id].push(trips[i].trip_id);
+                    //if (!goebu_params.trip_ids[trips[i].direction_id]) {
+                    //    goebu_params.trip_ids[trips[i].direction_id] = [];
+                    //}
+                    goebu_params.trip_ids.push(trips[i].trip_id);
                 }
             }
             return cb(null, goebu_params);
@@ -251,7 +251,6 @@ function findStopTimesForStopWithTripsTimeHorizon(goebu_params, cb) {
         stopTimeQuery = {},
         seconds_before = 0,
         seconds_after = 864000;
-
     if (typeof timeCheat !== 'undefined' && timeCheat !== null) {
         timeInSeconds = timeInSeconds + timeCheat;
     }
@@ -267,6 +266,7 @@ function findStopTimesForStopWithTripsTimeHorizon(goebu_params, cb) {
     }
 
     var times_key = "times";
+
     if (goebu_params.time_horizon) {
         if (goebu_params.time_horizon < 0) {
             seconds_before = 1800;
@@ -286,15 +286,12 @@ function findStopTimesForStopWithTripsTimeHorizon(goebu_params, cb) {
         .sort("departure_time") //asc has been removed in favor of sort as of mongoose 3.x
         .limit(1000);
 
-    for (var i = 0, len = goebu_params.trip_ids.length; i < len; i++) {
-        if (typeof goebu_params.trip_ids[i] !== 'undefined' &&
-            goebu_params.trip_ids[i] !== null &&
-            goebu_params.trip_ids[i].length > 0) {
-
-            query = query.where("trip_id").in(goebu_params.trip_ids[i]);
+    query = query.where({
+        trip_id: {
+            $in: goebu_params.trip_ids
         }
+    })
 
-    }
     query.exec(function (e, stopTimes) {
         if (e) {
             global.log.error(e.message);
@@ -305,6 +302,7 @@ function findStopTimesForStopWithTripsTimeHorizon(goebu_params, cb) {
                 goebu_params[times_key] = [];
             } else {
                 global.log.warn("No StopTime found. time_key=" + times_key);
+                global.log.warn("goebu_params.trip_ids", goebu_params.trip_ids);
             }
             for (var i = 0; i < len; i++) {
                 goebu_params[times_key].push({
@@ -314,8 +312,6 @@ function findStopTimesForStopWithTripsTimeHorizon(goebu_params, cb) {
                     sequence: stopTimes[i].stop_sequence
                 });
             }
-            //global.log.info("goebu_params[times_key]", goebu_params[times_key]);
-            //TODO: direction_id is missing
             return cb(null, goebu_params);
         }
     });
@@ -358,7 +354,7 @@ function getStopsByStopIds(goebu_params, cb) {
         function (direction_id, callback) {
             if (!goebu_params.stop_ids[direction_id]) {
                 return callback(new Error("No stop_ids for direction_id " + direction_id +
-                "in getStopsByStopIds"), goebu_params);
+                    "in getStopsByStopIds"), goebu_params);
             }
             goebu_params = utils.checkAndInitiateMissingVars(goebu_params, ['stops'],
                 'object');
@@ -377,6 +373,9 @@ function getStopsByStopIds(goebu_params, cb) {
                 goebu_params.stop_ids[direction_id],
                 function (stop_id, cb) {
                     stop_query.stop_id = stop_id;
+                    if (!goebu_params.stops[direction_id]) {
+                        goebu_params.stops[direction_id] = [];
+                    }
                     Stop.findOne(stop_query)
                         .select("stop_id stop_name stop_desc stop_lat stop_lon -_id")
                         .exec(function (e, stop) {
@@ -385,11 +384,7 @@ function getStopsByStopIds(goebu_params, cb) {
                                 return cb(e, null);
                             } else {
 
-                                if (!goebu_params.stops[direction_id]) {
-                                    goebu_params.stops[direction_id] = [];
-                                }
-
-                                if (goebu_params.stops[direction_id].indexOf(stop) === -1) {
+                                if (stop && goebu_params.stops[direction_id].indexOf(stop) === -1) {
                                     goebu_params.stops[direction_id].push(stop);
                                 }
                                 return cb();
@@ -451,9 +446,9 @@ function getStopIdsByTripIds(goebu_params, cb) {
         function (direction_id, callback) {
             if (!goebu_params.trip_ids[direction_id]) {
                 global.log.error("No trip_ids for direction_id " +
-                direction_id + " in getStopIdsByTripIds");
+                    direction_id + " in getStopIdsByTripIds");
                 return cb(new Error("No trip_ids for direction_id " +
-                direction_id + " in getStopIdsByTripIds"), goebu_params);
+                    direction_id + " in getStopIdsByTripIds"), goebu_params);
             }
             if (!goebu_params.stops[direction_id]) {
                 goebu_params.stops[direction_id] = [];
@@ -465,7 +460,7 @@ function getStopIdsByTripIds(goebu_params, cb) {
             StopTime.find(stop_time_query)
                 .where({
                     trip_id: {
-                        $in: goebu_params.trip_ids[direction_id]
+                        $in: goebu_params.trip_ids
                     }
                 })
                 .distinct("stop_id")
@@ -474,7 +469,9 @@ function getStopIdsByTripIds(goebu_params, cb) {
                         global.log.error(e, goebu_params);
                         callback(e, null);
                     } else {
-                        goebu_params.stop_ids[direction_id] = distinct_stop_ids;
+                        if (distinct_stop_ids) {
+                            goebu_params.stop_ids[direction_id] = distinct_stop_ids;
+                        }
 
                         return callback(null, goebu_params);
                     }
@@ -633,7 +630,7 @@ function constructLiveSequences(goebu_params, cb) {
                     break;
                 }
                 var sequence_diff = Math.abs(goebu_params.past_times[j].sequence -
-                goebu_params.distinct_sequences[i].sequence);
+                    goebu_params.distinct_sequences[i].sequence);
                 if (sequence_diff <= 3 && goebu_params.direction_id > 0) {
                     if (goebu_params.past_times[j].sequence < goebu_params.distinct_sequences[i].sequence) {
                         goebu_params.live_sequences.push({
@@ -681,7 +678,9 @@ function lookupStopIds(goebu_params, cb) {
                 global.log.error(e.message);
                 return cb(e, goebu_params);
             } else {
-                goebu_params.resolved_stops = stops;
+                if (stops) {
+                    goebu_params.resolved_stops = stops;
+                }
                 return cb(null, goebu_params);
             }
         });

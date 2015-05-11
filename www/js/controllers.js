@@ -2,15 +2,13 @@
 //var host = "http://goebu.christopherhenkel.de:3000/";
 var host = "http://localhost:3000/";
 
-var live_bus_position_timer;
+var live_bus_position_timer,
+    isMapInit = false;
 
 angular
     .module("starter.controllers", ["ionic", "ngMap"])
     .controller("HaltestellenCtrl", function ($scope, $ionicLoading, $ionicModal, $http, $stateParams, $timeout) {
-        $scope.$on('mapInitialized', function(event, map) {
-            $scope.map = map;
-            getStops();
-        });
+        $scope.map = null;
 
         var url = "";
         var route_id = null;
@@ -21,24 +19,21 @@ angular
             $scope.title = "Alle Haltestellen";
         } else {
             route_id = $stateParams.buslinienId;
-            $scope.title = "Haltestellen der Linie " + route_id;
+            $scope.title = route_id;
         }
 
         var liveBusPositions = [];
         var stop_markers = [];
-        var live_bus_bounds = new google.maps.LatLngBounds();
+        var live_bus_bounds;
         var bounds;
 
-
-
-
-
         function clear_markers(markerArray) {
+
             for (var i = 0; i < markerArray.length; i++) {
                 markerArray[i].setMap(null);
             }
-             markerArray.length = 0;
-            return markerArray;
+            markerArray.length = 0;
+            return [];
         }
 
         function addStopsToMap(data) {
@@ -49,24 +44,25 @@ angular
             var stop;
             for (var i = 0, len = stops.length; i < len; i++) {
                 stop = stops[i];
+                if (stop) {
+                    stop_markers[i] = new google.maps.Marker({
+                        title: stop.stop_name,
+                        position: new google.maps.LatLng(stop.stop_lat, stop.stop_lon),
+                        icon: "img/bushaltestelle.png",
+                        stop_name: stop.stop_name,
+                        stop_desc: stop.stop_desc,
+                        stop_id: stop.stop_id,
+                        stop_lat: stop.stop_lat,
+                        stop_lon: stop.stop_lon,
+                        map: $scope.map
+                    });
 
-                stop_markers[i] = new google.maps.Marker({
-                    title: stop.stop_name,
-                    position: new google.maps.LatLng(stop.stop_lat, stop.stop_lon),
-                    icon: "img/bushaltestelle.png",
-                    stop_name: stop.stop_name,
-                    stop_desc: stop.stop_desc,
-                    stop_id: stop.stop_id,
-                    stop_lat: stop.stop_lat,
-                    stop_lon: stop.stop_lon,
-                    map: $scope.map
-                });
-
-                google.maps.event.addListener(
-                    stop_markers[i], "click", $scope.markerClicked.bind(null, i));
-                bounds.extend(new google.maps.LatLng(stop.stop_lat, stop.stop_lon));
+                    google.maps.event.addListener(
+                        stop_markers[i], "click", $scope.markerClicked.bind(null, i));
+                    bounds.extend(new google.maps.LatLng(stop.stop_lat, stop.stop_lon));
+                }
             }
-            //$scope.map.fitBounds(bounds);
+            $scope.map.fitBounds(bounds);
         }
 
         function getStops() {
@@ -85,6 +81,20 @@ angular
                 }.bind($scope));
         }
 
+        $scope.$on('mapInitialized', function (event, map) {
+            // mapInitialized got called twice. bug?
+            if (!isMapInit) {
+                $scope.map = map;
+
+                getStops();
+                isMapInit = true;
+            }
+        });
+        if (isMapInit) {
+
+            getStops();
+        }
+
         function restartLiveBusTimer() {
             $timeout.cancel(live_bus_position_timer);
             $scope.updateBusMarker(function () {
@@ -95,9 +105,12 @@ angular
 
         $scope.markerClicked = function (index) {
             $scope.selected_stop = stop_markers[index];
-            live_bus_bounds = new google.maps.LatLngBounds();
+            if (!live_bus_bounds) {
+                live_bus_bounds = new google.maps.LatLngBounds();
+            }
             live_bus_bounds.extend(new google.maps.LatLng(stop_markers[index].stop_lat, stop_markers[index].stop_lon));
 
+            liveBusPositions = clear_markers(liveBusPositions);
             restartLiveBusTimer();
             $scope.getStopTimes(function () {
             });
@@ -108,25 +121,30 @@ angular
             $scope.direction_id = $scope.direction_id === 1 ? 2 : 1;
             getStops();
 
-
-
             if ($scope.selected_stop && $scope.selected_stop.stop_id) {
+                // TODO: change selected_stop.stop_id to stop with similar name but different id.
+                liveBusPositions = clear_markers(liveBusPositions);
                 restartLiveBusTimer();
+                $scope.getStopTimes(function () {
+                });
             }
 
         };
 
         $scope.getStopTimes = function (cb) {
-            // only show human readable format HH:MM
             $http.get(host + "api/times/goevb/route/" +
             route_id + "/direction/" + $scope.direction_id + "/stop/" + $scope.selected_stop.stop_id)
                 .success(function (data) {
                     if (data !== null) {
-                        if (!data.times || data.times.length < 1) {
-                            console.log("data.times empty");
+                        if (data.times && data.times.length > 0) {
+                            $scope.selected_stop.times = data.times;
+                            var tmpNextTimes = [];
+                            var len = Math.min(data.times.length, 3);
+                            for (var i = 0; i < len; i++) {
+                                tmpNextTimes.push(data.times[i].time_human);
+                            }
+                            $scope.selected_stop.next_times = tmpNextTimes;
                         }
-                        $scope.selected_stop.times = data.times;
-
                         cb(null, "times");
                     } else {
                         $scope.selected_stop.times = [];
@@ -148,31 +166,26 @@ angular
                         var nData = data.length;
                         var nPreviousData = liveBusPositions.length;
 
-                        // Kürze das Array, wenn das alte Array zu groß ist.
-                        if (nPreviousData > nData) {
-                            console.log(nPreviousData, "<-- nPreviousData");
-                            console.log(nData, "<-- nData");
-
-                            console.log("slicing");
-                            var rest_slice = liveBusPositions.slice(nData, nPreviousData);
-                            clear_markers(rest_slice);
-                            liveBusPositions = liveBusPositions.slice(0, nData);
+                        if (nPreviousData !== nData) {
+                            liveBusPositions = clear_markers(liveBusPositions);
                         }
-
                         for (var j = 0, len2 = data.length; j < len2; j++) {
                             if (cb) {
+                                if (!live_bus_bounds) {
+                                    live_bus_bounds = new google.maps.LatLngBounds();
+                                }
                                 live_bus_bounds.extend(new google.maps.LatLng(data[j].lat, data[j].lon));
-                            }
-                            if (nPreviousData > 0 && j < nPreviousData) {
-                                liveBusPositions[j].setPosition(new google.maps.LatLng(data[j].lat, data[j].lon));
-                            } else {
-                                liveBusPositions[j] = new google.maps.Marker({
+                            }                             
+                            if (!liveBusPositions[j]){
+                                liveBusPositions.push(new google.maps.Marker({
                                     title: "yipeeee",
                                     position: new google.maps.LatLng(data[j].lat, data[j].lon),
                                     icon: "img/bus.png",
                                     map: $scope.map,
                                     zIndex: 1000
-                                });
+                                }));
+                            } else{
+                                liveBusPositions[j].setPosition(new google.maps.LatLng(data[j].lat, data[j].lon));
                             }
                         }
                         if (cb) {
@@ -228,7 +241,8 @@ angular
     controller("AppCtrl", function ($scope, $timeout, $ionicSideMenuDelegate) {
 
         $scope.toggleLeftSideMenu = function () {
-            //$timeout.cancel(live_bus_position_timer);
+            $timeout.cancel(live_bus_position_timer);
+            isMapInit = false;
             $ionicSideMenuDelegate.toggleLeft();
         };
 

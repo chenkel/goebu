@@ -1,6 +1,13 @@
-<ion-view class="align-left" title={{title}} ng-controller="HaltestellenCtrl">
+<ion-view class="align-left" title={{}} ng-controller="HaltestellenCtrl">
+    <ion-nav-buttons side="left">
+        <button class="button button-icon button-clear ion-android-bus" menu-toggle="left"
+                ng-click=toggleLeftSideMenu()>
+            <span class="badge badge-assertive line-badge line-{{title}}">{{title}}</span>
+        </button>
+
+    </ion-nav-buttons>
     <ion-nav-buttons side="right">
-        <button class="button button-icon icon ion-clock" ng-click=changeDirection()></button>
+        <button class="button button-icon icon ion-arrow-swap" ng-click=changeDirection()></button>
     </ion-nav-buttons>
     <ion-content scroll="false">
         <map id="map_canvas" center="[51.5327604, 9.9352051]"
@@ -20,6 +27,12 @@
         <div class="title align-left"
              ng-show="selected_stop.stop_desc">
             {{selected_stop.stop_desc}}
+        </div>
+        <div class="title align-center"
+             ng-show=selected_stop.next_times>
+            <div ng-repeat="time in selected_stop.next_times track by $index" class="next-times">
+                <span>{{ time }}</span>
+            </div>
         </div>
         <a class="button button-icon icon ion-clock"
            ng-show=selected_stop.times
