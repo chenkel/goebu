@@ -32,7 +32,7 @@
     }
   }
 
-  var Attr2Options = function($parse, NavigatorGeolocation, GeoCoder) { 
+  var Attr2Options = function($parse, $timeout, NavigatorGeolocation, GeoCoder) { 
 
     /**
      * Returns the attributes of an element as hash
@@ -200,10 +200,12 @@
         return function(event) {
           function index(obj,i) {return obj[i];}
           var f = funcName.split('.').reduce(index, scope);
-          f.apply(this, [event].concat(args));
-          scope.$apply();
-        }
-      }
+          f && f.apply(this, [event].concat(args));
+          $timeout( function() {
+            scope.$apply();
+          });
+        };
+      };
 
       for(var key in attrs) {
         if (attrs[key]) {
@@ -302,5 +304,5 @@
 
   }; 
 
-  angular.module('ngMap').service('Attr2Options', ['$parse', 'NavigatorGeolocation', 'GeoCoder', Attr2Options]);
+  angular.module('ngMap').service('Attr2Options', ['$parse', '$timeout', 'NavigatorGeolocation', 'GeoCoder', Attr2Options]);
 })();

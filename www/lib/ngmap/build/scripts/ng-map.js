@@ -34,7 +34,7 @@ var ngMap = angular.module('ngMap', []);
     }
   }
 
-  var Attr2Options = function($parse, NavigatorGeolocation, GeoCoder) { 
+  var Attr2Options = function($parse, $timeout, NavigatorGeolocation, GeoCoder) { 
 
     /**
      * Returns the attributes of an element as hash
@@ -202,10 +202,12 @@ var ngMap = angular.module('ngMap', []);
         return function(event) {
           function index(obj,i) {return obj[i];}
           var f = funcName.split('.').reduce(index, scope);
-          f.apply(this, [event].concat(args));
-          scope.$apply();
-        }
-      }
+          f && f.apply(this, [event].concat(args));
+          $timeout( function() {
+            scope.$apply();
+          });
+        };
+      };
 
       for(var key in attrs) {
         if (attrs[key]) {
@@ -304,7 +306,7 @@ var ngMap = angular.module('ngMap', []);
 
   }; 
 
-  angular.module('ngMap').service('Attr2Options', ['$parse', 'NavigatorGeolocation', 'GeoCoder', Attr2Options]);
+  angular.module('ngMap').service('Attr2Options', ['$parse', '$timeout', 'NavigatorGeolocation', 'GeoCoder', Attr2Options]);
 })();
 
 /**
@@ -728,6 +730,9 @@ ngMap.directive('customControl', ['Attr2Options', '$compile', function(Attr2Opti
       scope.$on('mapInitialized', function(event, map) {
         updateRoute(renderer, options);
       });
+      scope.$on('$destroy', function(event, map) {
+        mapController.deleteObject('directionsRenderers', renderer);
+      });
     };
     
     return {
@@ -1137,7 +1142,7 @@ ngMap.directive('heatmapLayer', ['Attr2Options', '$window', function(Attr2Option
  * Example: 
  *
  *   <map zoom="11" center="[41.875696,-87.624207]">
- *     <kml-layer url="http://gmaps-samples.googlecode.com/svn/trunk/ggeoxml/cta.kml" ></kml-layer>
+ *     <kml-layer url="https://gmaps-samples.googlecode.com/svn/trunk/ggeoxml/cta.kml" ></kml-layer>
  *    </map>
  */
 /*jshint -W089*/
@@ -1410,7 +1415,7 @@ ngMap.directive('mapType', ['Attr2Options', '$window', function(Attr2Options, $w
 
       /**
        * create a new `div` inside map tag, so that it does not touch map element
-       * http://stackoverflow.com/questions/20955356
+       * https://stackoverflow.com/questions/20955356
        */
       var el = document.createElement("div");
       el.style.width = "100%";

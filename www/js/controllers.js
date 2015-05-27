@@ -175,7 +175,7 @@ angular
                                     live_bus_bounds = new google.maps.LatLngBounds();
                                 }
                                 live_bus_bounds.extend(new google.maps.LatLng(data[j].lat, data[j].lon));
-                            }                             
+                            }
                             if (!liveBusPositions[j]){
                                 liveBusPositions.push(new google.maps.Marker({
                                     title: "yipeeee",

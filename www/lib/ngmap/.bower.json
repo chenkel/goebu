@@ -1,6 +1,6 @@
 {
   "name": "ngmap",
-  "version": "1.7.7",
+  "version": "1.7.10",
   "main": "./build/scripts/ng-map.js",
   "homepage": "https://github.com/allenhwkim/angularjs-google-maps",
   "authors": [
@@ -13,11 +13,11 @@
     "google-maps"
   ],
   "license": "MIT",
-  "_release": "1.7.7",
+  "_release": "1.7.10",
   "_resolution": {
     "type": "version",
-    "tag": "v1.7.7",
-    "commit": "b5c956ee46c3f26e73312a4f7c607cb897dc54cc"
+    "tag": "v1.7.10",
+    "commit": "246374c703be5118f74ebe71dd7c4194bc594d1b"
   },
   "_source": "git://github.com/allenhwkim/angularjs-google-maps.git",
   "_target": "*",
