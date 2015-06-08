@@ -184,6 +184,7 @@ function findServices(goebu_params, cb) {
  */
 function findTripsWithServiceRouteDirection(goebu_params, cb) {
 
+    // TODO: see what happens if you do not pass in route_id
     var tripQuery = {};
     //build query
     if (goebu_params.agency_key) {
