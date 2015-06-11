@@ -1,3 +1,0 @@
-[submodule "www/lib/ngmap"]
-	path = www/lib/ngmap
-	url = https://chenkel@github.com/chenkel/angularjs-google-maps.git
