@@ -21,7 +21,17 @@
     "url": "https://github.com/chenkel/goebu.git"
   },
   "cordovaPlugins": [
-    "plugin.google.maps"
+    "plugin.google.maps",
+    {
+      "locator": "https://github.com/phonegap-build/PushPlugin.git",
+      "id": "com.phonegap.plugins.PushPlugin"
+    },
+    "cordova-plugin-whitelist"
   ],
-  "cordovaPlatforms": []
+  "cordovaPlatforms": [
+    {
+      "platform": "android",
+      "locator": "browser"
+    }
+  ]
 }

@@ -10,24 +10,19 @@
         <button class="button button-icon icon ion-arrow-swap" ng-click=changeDirection()></button>
     </ion-nav-buttons>
     <ion-content scroll="false">
-        <div style="width: 68%; float:left; height: 100%">
-            <map id="map_canvas" center="[51.5327604, 9.9352051]"
-                 data-tap-disabled="true"
-                 street-view-control="false"
-                 map-type-control="false"
-                 zoom-control="true"
-                 zoom-control-options="{style:'SMALL', position:'RIGHT_BOTTOM'}">
-                <directions
-                        draggable="true"
-                        panel="directions-panel"
-                        travel-mode="TRANSIT"
-                        origin="51.544207,9.934970"
-                        destination="51.524132,9.944412">
-                </directions>
-            </map>
-        </div>
-        <div id="directions-panel" style="width: 28%; float:left; height: 100%; overflow: auto; padding: 0px 5px">
-        </div>
+        <map id="map_canvas" center="[51.5327604, 9.9352051]"
+             street-view-control="false"
+             map-type-control="false"
+             zoom-control="true"
+             zoom-control-options="{style:'SMALL', position:'RIGHT_BOTTOM'}">
+            <directions
+                    draggable="true"
+                    travel-mode="TRANSIT"
+                    infoWindow=""
+                    origin="51.544207,9.934970"
+                    destination="51.524132,9.944412">
+            </directions>
+        </map>
 
     </ion-content>
 
