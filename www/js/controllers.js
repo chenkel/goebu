@@ -247,11 +247,11 @@ angular
 
     .controller("AppCtrl", function ($scope, $rootScope,  $timeout, $ionicSideMenuDelegate) {
 
-        $rootScope.$on('$cordovaPush:tokenReceived', function(event, data) {
-            alert("Successfully registered token " + data.token);
-            console.log('Ionic Push: Got token ', data.token, data.platform);
-            $scope.token = data.token;
-        });
+        //$rootScope.$on('$cordovaPush:tokenReceived', function(event, data) {
+        //    alert("Successfully registered token " + data.token);
+        //    console.log('Ionic Push: Got token ', data.token, data.platform);
+        //    $scope.token = data.token;
+        //});
 
         $scope.toggleLeftSideMenu = function () {
             $timeout.cancel(live_bus_position_timer);

@@ -4,9 +4,10 @@
     <!--&lt;!&ndash;<button class="button button-icon icon ion-arrow-swap" ng-click=changeDirection()></button>&ndash;&gt;-->
     <!--&lt;!&ndash;</ion-nav-buttons>&ndash;&gt;-->
     <!--</ion-nav-bar>-->
-    <ion-content  class="no-header content-stable" style="top: 0;" header-shrink scroll-event-interval="5" ng-controller="MapCtrl">
+    <ion-content class="no-header content-stable" style="top: 0;" header-shrink scroll-event-interval="5"
+                 ng-controller="MapCtrl">
         <div scroll="false" data-tap-disabled="true" class="map-wrapper">
-            <div id="map_canvas" ></div>
+            <div id="map_canvas"></div>
         </div>
         <!--&lt;!&ndash;scroll="false" data-tap-disabled="true"&ndash;&gt;-->
         <!--<div data-tap-disabled="true" class="map-wrapper">-->
@@ -34,9 +35,22 @@
         <!--</div>-->
 
         <ion-list>
-            <div id="total"></div>
-            <div id="directions-panel"></div>
+            <div class="list card">
+                <div id="directions-panel"></div>
+            </div>
         </ion-list>
+
+        <ion-slide-box on-slide-changed="slideHasChanged($index)">
+            <ion-slide>
+                <div class="box blue"><h1>BLUE</h1></div>
+            </ion-slide>
+            <ion-slide>
+                <div class="box yellow"><h1>YELLOW</h1></div>
+            </ion-slide>
+            <ion-slide>
+                <div class="box pink"><h1>PINK</h1></div>
+            </ion-slide>
+        </ion-slide-box>
 
     </ion-content>
 

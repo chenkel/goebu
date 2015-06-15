@@ -1,7 +1,7 @@
 "use strict";
 angular.module("goebu.controllers")
 
-    .controller('MapCtrl', function ($scope, $ionicLoading) {
+    .controller('MapCtrl', function ($scope, $ionicLoading, $ionicSlideBoxDelegate) {
 
         // GLOBAL variables
         var rendererOptions = {
@@ -14,11 +14,25 @@ angular.module("goebu.controllers")
         var originMarker, destinationMarker;
         var map;
 
+        var currentBusLines;
+        var previousRouteIndex;
+
         function test() {
-            console.log("hallo! Geil, mehr Kontrolle");
+        }
+
+        function make_array_unique(arr) {
+            var n = {}, r = [];
+            for (var i = 0; i < arr.length; i++) {
+                if (!n[arr[i]]) {
+                    n[arr[i]] = true;
+                    r.push(arr[i]);
+                }
+            }
+            return r;
         }
 
         function initialize() {
+            console.log("<-- map-controller initialize called");
             var myLatlng = new google.maps.LatLng(51.5327604, 9.9352051);
 
             var mapOptions = {
@@ -66,6 +80,18 @@ angular.module("goebu.controllers")
                 calcRoute();
             });
 
+            google.maps.event.addListener(directionsDisplay, 'directions_changed', function () {
+                console.log("----- directions_changed fired");
+                previousRouteIndex = null;
+            });
+
+            google.maps.event.addListener(directionsDisplay, 'routeindex_changed', function () {
+                console.log("----- routeindex_changed fired");
+
+                directionsDisplayUpdated();
+
+            });
+
             calcRoute();
 
             $scope.map = map;
@@ -83,6 +109,56 @@ angular.module("goebu.controllers")
         //    map.setCenter(location);
         //}
 
+        function directionsDisplayUpdated() {
+            var routeIndex = directionsDisplay && directionsDisplay.hasOwnProperty('routeIndex') ? directionsDisplay.routeIndex : null;
+            if (previousRouteIndex !== routeIndex){
+                findBusLines(directionsDisplay);
+            }
+            previousRouteIndex = routeIndex;
+        }
+
+        function findBusLines(object) {
+            var routeIndex = directionsDisplay && directionsDisplay.hasOwnProperty('routeIndex') ? directionsDisplay.routeIndex : null;
+
+            function hasNeededProperty(object) {
+                if (object.hasOwnProperty('routes')) {
+                    return object;
+
+                } else if (object.hasOwnProperty('directions')) {
+                    if (object.directions.hasOwnProperty('routes')) {
+                        return object.directions;
+                    }
+                } else {
+                    return null;
+                }
+            }
+
+            var tmpObj = hasNeededProperty(object);
+            currentBusLines = [];
+            if (tmpObj !== null) {
+                if (routeIndex !== null) {
+                    var route = tmpObj.routes[routeIndex];
+                    if (route.hasOwnProperty('legs')) {
+                        for (var j = 0, len1 = route.legs.length; j < len1; j++) {
+                            var leg = route.legs[j];
+                            if (leg.hasOwnProperty('steps')) {
+                                for (var k = 0, len2 = leg.steps.length; k < len2; k++) {
+                                    var step = leg.steps[k];
+                                    if (step.hasOwnProperty('travel_mode')) {
+                                        if (step.travel_mode === "TRANSIT") {
+                                            currentBusLines.push(step.transit.line.short_name);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    currentBusLines = make_array_unique(currentBusLines);
+                    console.log(currentBusLines, "<-- currentBusLines");
+                }
+            }
+        }
+
         function calcRoute() {
 
             var request = {
@@ -93,30 +169,9 @@ angular.module("goebu.controllers")
             };
             directionsService.route(request, function (response, status) {
                 if (status === google.maps.DirectionsStatus.OK) {
+                    console.log(response, "<-- response");
+                    
                     directionsDisplay.setDirections(response);
-
-                    var lines = [];
-                    if (response.hasOwnProperty('routes')) {
-                        for (var i = 0, len = response.routes.length; i < len; i++) {
-                            var route = response.routes[i];
-                            if (route.hasOwnProperty('legs')) {
-                                for (var j = 0, len1 = route.legs.length; j < len1; j++) {
-                                    var leg = route.legs[j];
-                                    if (leg.hasOwnProperty('steps')) {
-                                        for (var k = 0, len2 = leg.steps.length; k < len2; k++) {
-                                            var step = leg.steps[k];
-                                            if (step.hasOwnProperty('travel_mode')) {
-                                                if (step.travel_mode === "TRANSIT") {
-                                                    lines.push(step.transit.line.short_name);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    console.log(lines, "<-- lines");
                 }
             });
         }
@@ -128,7 +183,6 @@ angular.module("goebu.controllers")
                 total += myroute.legs[i].distance.value;
             }
             total = total / 1000.0;
-            document.getElementById('total').innerHTML = total + ' km';
         }
 
         $scope.centerOnMe = function () {
