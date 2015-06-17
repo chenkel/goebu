@@ -10,6 +10,7 @@
     "ionic-service-deploy": "~0.0.6",
     "ionic-service-analytics": "master",
     "ngCordova": "~0.1.17-alpha",
-    "ionic-service-push": "~0.1.7"
+    "ionic-service-push": "~0.1.7",
+    "ionic-ion-header-shrink": "*"
   }
 }

@@ -26,7 +26,8 @@
       "locator": "https://github.com/phonegap-build/PushPlugin.git",
       "id": "com.phonegap.plugins.PushPlugin"
     },
-    "cordova-plugin-whitelist"
+    "cordova-plugin-whitelist",
+    "cordova-plugin-geolocation"
   ],
   "cordovaPlatforms": [
     {

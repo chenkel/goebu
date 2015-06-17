@@ -1,12 +1,77 @@
-//.bar > .buttons-left > span .line-badge {
-//  display: inline-block;
-//}
-//
-//.item-complex>.item-content  {
-//  padding: 14px 30px;
-//  text-align: center;
-//}
+.bar.bar-light.bar-light-blue{
+  background-color: rgba(106, 171, 241, 0.4);
 
-.bar.bar-light {
-  //background:none  !important; /* or transparent, or background:none */
+}
+
+.card,
+.list, .list.card, #directions-panel > .adp-list,
+.list.card, #directions-panel > .adp{
+  background-color: rgba(225, 225, 225, 0.6);
+}
+
+#directions-panel > .adp-list {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+// custom directions panel styling
+.adp-warnbox, .adp-agencies {
+  display: none;
+}
+
+.adp-legal {
+  font-size: smaller;
+  text-align: center;
+}
+
+.adp-listheader {
+  //text-align: center;
+  //font-weight: 500;
+
+  //display: none;
+}
+
+.adp-list {
+  border: none;
+}
+
+.adp {
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+}
+
+.adp-summary-duration {
+  font-weight: 500;
+}
+
+.adp-placemark {
+  background-color: rgba(106, 171, 241, 0.2)
+}
+
+.adp-listsel {
+  background-color: rgba(106, 171, 241, 0.4)
+}
+
+
+.adp-list div:nth-child(2) ol {
+  border: rgba(106, 171, 241, 0.4) solid 1px;
+  & li {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+    min-height: 40px !important;
+    border: lightgrey dashed 1px !important;
+  }
+}
+
+.list {
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, .4);
+  border-radius: 10px;
+
+  //box-shadow: inset 0 0 1em #111;
+  //margin: 10px 10px;
+}
+
+.card {
+  margin: 8px 7px;
+  border-radius: 10px;
 }

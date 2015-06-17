@@ -1,77 +1,33 @@
-<ion-view class="align-left" title="Goebu" ng-controller="HaltestellenCtrl">
+<ion-view class="align-left" title="{{title}}" ng-controller="MapCtrl">
     <!--<ion-nav-bar class="bar-clear">-->
     <!--&lt;!&ndash;<ion-nav-buttons side="right">&ndash;&gt;-->
     <!--&lt;!&ndash;<button class="button button-icon icon ion-arrow-swap" ng-click=changeDirection()></button>&ndash;&gt;-->
     <!--&lt;!&ndash;</ion-nav-buttons>&ndash;&gt;-->
     <!--</ion-nav-bar>-->
-    <ion-content class="no-header content-stable" style="top: 0;" header-shrink scroll-event-interval="5"
-                 ng-controller="MapCtrl">
-        <div scroll="false" data-tap-disabled="true" class="map-wrapper">
+
+    <ion-nav-bar class="bar-light">
+
+    </ion-nav-bar>
+    <ion-content
+            header-shrink-twitter-style
+            scroll-event-interval="5"
+            ng-controller="MapCtrl">
+
+        <!--<div scroll="false" data-tap-disabled="true" class="map-wrapper">-->
+        <div class="map-wrapper">
             <div id="map_canvas"></div>
         </div>
-        <!--&lt;!&ndash;scroll="false" data-tap-disabled="true"&ndash;&gt;-->
-        <!--<div data-tap-disabled="true" class="map-wrapper">-->
-        <!--<map id="map_canvas"-->
-        <!--draggable="true"-->
-        <!--center="[51.5327604, 9.9352051]"-->
-        <!--disable-default-ui="true"-->
-        <!--street-view-control="false"-->
-        <!--map-type-control="false"-->
-        <!--zoom-control="false"-->
-        <!--pan-control="false"-->
-        <!--zoom-control-options="{style:'SMALL', position:'RIGHT_BOTTOM'}"-->
-        <!--map-type-id="TERRAIN">-->
-        <!--<directions-->
-        <!--draggable="true"-->
-        <!--travel-mode="TRANSIT"-->
-        <!--provide-route-alternatives="true"-->
-        <!--origin="51.547750,9.945073"-->
-        <!--panel="directions-panel"-->
-        <!--destination="51.530426,9.948249"-->
-        <!--on-directions_changed="directionsChanged(e)"-->
-        <!-->
-        <!--</directions>-->
-        <!--</map>-->
-        <!--</div>-->
 
         <ion-list>
-            <div class="list card">
-                <div id="directions-panel"></div>
-            </div>
+
+            <ion-slide-box on-slide-changed="slideHasChanged($index)" show-pager="false">
+                <ion-slide>
+                    <div class="card">
+                        <div id="directions-panel"></div>
+                    </div>
+                </ion-slide>
+            </ion-slide-box>
         </ion-list>
 
-        <ion-slide-box on-slide-changed="slideHasChanged($index)">
-            <ion-slide>
-                <div class="box blue"><h1>BLUE</h1></div>
-            </ion-slide>
-            <ion-slide>
-                <div class="box yellow"><h1>YELLOW</h1></div>
-            </ion-slide>
-            <ion-slide>
-                <div class="box pink"><h1>PINK</h1></div>
-            </ion-slide>
-        </ion-slide-box>
-
     </ion-content>
-
-    <!--<ion-footer-bar class="bar bar-footer bar-balanced bar-dark">-->
-    <!--<div class="title align-left"-->
-    <!--ng-hide="selected_stop.stop_desc">-->
-    <!--Wählen Sie Ihre Zielhaltestelle-->
-    <!--</div>-->
-    <!--<div class="title align-left"-->
-    <!--ng-show="selected_stop.stop_desc">-->
-    <!--{{selected_stop.stop_desc}}-->
-    <!--</div>-->
-    <!--<div class="title align-center"-->
-    <!--ng-show=selected_stop.next_times>-->
-    <!--<div ng-repeat="time in selected_stop.next_times track by $index" class="next-times">-->
-    <!--<span>{{ time }}</span>-->
-    <!--</div>-->
-    <!--</div>-->
-    <!--<a class="button button-icon icon ion-clock"-->
-    <!--ng-show=selected_stop.times-->
-    <!--ng-click=openModal()>-->
-    <!--</a>-->
-    <!--</ion-footer-bar>-->
 </ion-view>
