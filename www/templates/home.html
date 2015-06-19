@@ -1,30 +1,18 @@
-<ion-view class="align-left" ng-controller="MapCtrl">
-    <!--<ion-nav-bar class="bar-clear">-->
-    <!--&lt;!&ndash;<ion-nav-buttons side="right">&ndash;&gt;-->
-    <!--&lt;!&ndash;<button class="button button-icon icon ion-arrow-swap" ng-click=changeDirection()></button>&ndash;&gt;-->
-    <!--&lt;!&ndash;</ion-nav-buttons>&ndash;&gt;-->
-    <!--</ion-nav-bar>-->
-
+<ion-view class="align-left" title="{{userHint}}" ng-controller="MapCtrl" >
     <ion-nav-bar class="bar-light">
         <ion-nav-buttons side="right">
-        <button class="button button-icon icon ion-arrow-swap" ng-click=swapMarkers()></button>
+            <button class="button button-icon icon ion-arrow-swap" ng-click=swapMarkers()></button>
         </ion-nav-buttons>
-
-
-
     </ion-nav-bar>
-    <ion-content ng-controller="MapCtrl">
+    <ion-content>
         <!--header-shrink-twitter-style-->
         <!--scroll-event-interval="5"-->
-        <div ng-class="{'map-wrapper second-stage': isSecondStage, 'map-wrapper': true}">
-            <div scroll="false"
-                 data-tap-disabled="true">
-                <div id="map_canvas">{{isSecondStage}}</div>
-            </div>
+        <div class="map-wrapper">
+            <!--<div scroll="false" data-tap-disabled="true">-->
+                <div id="map_canvas"></div>
+            <!--</div>-->
         </div>
-
         <ion-list>
-
             <ion-slide-box on-slide-changed="slideHasChanged($index)" show-pager="false">
                 <ion-slide>
                     <div class="card">
@@ -33,6 +21,5 @@
                 </ion-slide>
             </ion-slide-box>
         </ion-list>
-
     </ion-content>
 </ion-view>

@@ -9,31 +9,31 @@
 angular.module('goebu', [
     'ionic',
     'ngCordova',
-    //'ionic.service.core',
+    'ionic.service.core',
+    'ionic.service.deploy',
     'goebu.controllers'
 ])
 
-    //.config(['$ionicAppProvider', function ($ionicAppProvider) {
-    //    // Identify app
-    //    //$ionicAppProvider.identify({
-    //    //    // The App ID for the server
-    //    //    app_id: '3a1fb0c9',
-    //    //    // The API key all services will use for this app
-    //    //    api_key: '2a062a84478caa6584fa2bcc34a89cf1ba8b2a1b685acdb1'
-    //    //});
-    //    //console.log("<-- Provider");
-    //}])
+    .config(['$ionicAppProvider', function ($ionicAppProvider) {
+         //Identify app
+        $ionicAppProvider.identify({
+            // The App ID for the server
+            app_id: '3a1fb0c9',
+            // The API key all services will use for this app
+            api_key: '2a062a84478caa6584fa2bcc34a89cf1ba8b2a1b685acdb1'
+        });
+    }])
 
-    .run(function ($ionicPlatform) {
+    .run(function ($ionicPlatform, $ionicUser, $ionicDeploy) {
         $ionicPlatform.ready(function () {
-            //var user = $ionicUser.get();
-            //if (!user.user_id) {
-            //    // Set your user_id here, or generate a random one
-            //    user.user_id = $ionicUser.generateGUID();
-            //    console.log('Identifying user - new one');
-            //} else {
-            //    console.log('Identifying user - found');
-            //}
+            var user = $ionicUser.get();
+            if (!user.user_id) {
+                // Set your user_id here, or generate a random one
+                user.user_id = $ionicUser.generateGUID();
+                console.log('Identifying user - new one');
+            } else {
+                console.log('Identifying user - found');
+            }
 
             //$ionicUser.identify(user).then(function () {
             //    // Register with the Ionic Push service.  All parameters are optional.
@@ -52,42 +52,42 @@ angular.module('goebu', [
             //    console.log(err, "<-- err");
             //});
 
-            //$ionicDeploy.check().then(function (response) {
-            //        // response will be true/false
-            //        if (response) {
-            //            console.log("ionicDeploy - New updates available");
-            //            // Download the updates
-            //            $ionicDeploy.download().then(function () {
-            //                // Extract the updates
-            //                $ionicDeploy.extract().then(function () {
-            //                    // Load the updated version
-            //                    $ionicDeploy.load();
-            //                }, function (error) {
-            //                    console.log(error, "ionicDeploy - Error extracting");
-            //                    // Error extracting
-            //                }, function (progress) {
-            //                    // Do something with the zip extraction progress
-            //                    console.log(progress, "ionicDeploy - progress unzipping");
-            //                    //$scope.extraction_progress = progress;
-            //                });
-            //            }, function (error) {
-            //                // Error downloading the updates
-            //                console.log(error, "ionicDeploy - Error downloading the updates");
-            //            }, function (progress) {
-            //                // Do something with the download progress
-            //                console.log(progress, "ionicDeploy - progress downloading");
-            //                //$scope.download_progress = progress;
-            //            });
-            //        } else {
-            //            console.log("ionicDeploy - No new updates available");
-            //            // No updates, load the most up to date version of the app
-            //            $ionicDeploy.load();
-            //        }
-            //    },
-            //    function (error) {
-            //        // Error checking for updates
-            //        console.log(error, "ionicDeploy - Error checking for updates");
-            //    });
+            $ionicDeploy.check().then(function (response) {
+                    // response will be true/false
+                    if (response) {
+                        console.log("ionicDeploy - New updates available");
+                        // Download the updates
+                        $ionicDeploy.download().then(function () {
+                            // Extract the updates
+                            $ionicDeploy.extract().then(function () {
+                                // Load the updated version
+                                $ionicDeploy.load();
+                            }, function (error) {
+                                console.log(error, "ionicDeploy - Error extracting");
+                                // Error extracting
+                            }, function (progress) {
+                                // Do something with the zip extraction progress
+                                console.log(progress, "ionicDeploy - progress unzipping");
+                                //$scope.extraction_progress = progress;
+                            });
+                        }, function (error) {
+                            // Error downloading the updates
+                            console.log(error, "ionicDeploy - Error downloading the updates");
+                        }, function (progress) {
+                            // Do something with the download progress
+                            console.log(progress, "ionicDeploy - progress downloading");
+                            //$scope.download_progress = progress;
+                        });
+                    } else {
+                        console.log("ionicDeploy - No new updates available");
+                        // No updates, load the most up to date version of the app
+                        $ionicDeploy.load();
+                    }
+                },
+                function (error) {
+                    // Error checking for updates
+                    console.log(error, "ionicDeploy - Error checking for updates");
+                });
 
             // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
             // for form inputs)

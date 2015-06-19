@@ -5,8 +5,8 @@ var originMarker, destinationMarker, userLocationMarker;
 var watch;
 
 angular.module("goebu.controllers")
+    .controller('MapCtrl', function ($scope, $ionicLoading, $ionicSlideBoxDelegate, $cordovaGeolocation, $ionicNavBarDelegate, $ionicPlatform) {
 
-    .controller('MapCtrl', function ($scope, $ionicLoading, $ionicSlideBoxDelegate, $cordovaGeolocation, $ionicNavBarDelegate) {
 
 
 
@@ -77,12 +77,15 @@ angular.module("goebu.controllers")
             return r;
         }
 
-        function initialize() {
+        ionic.Platform.ready(function(){
             $ionicLoading.show({
                 template: 'Karte wird initialisiert...'
             });
-            console.log("initialize started");
-            $ionicNavBarDelegate.title("Wo möchten Sie hin?");
+            initializeMap();
+        });
+
+        function initializeMap() {
+
 
             var myLatlng = new google.maps.LatLng(51.5327604, 9.9352051);
 
@@ -91,10 +94,8 @@ angular.module("goebu.controllers")
                 zoom: 15,
                 mapTypeId: google.maps.MapTypeId.ROADMAP,
                 disableDefaultUI: true
-
             };
-            map = new google.maps.Map(document.getElementById("map_canvas"),
-                mapOptions);
+            map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
             var currentLocationControlDiv = document.createElement('div');
             currentLocationControlDiv.className = 'currentLocationControl';
@@ -130,10 +131,8 @@ angular.module("goebu.controllers")
             $scope.map = map;
 
             $ionicLoading.hide();
+            $scope.userHint = "Wo möchten Sie hin?";
         }
-
-        google.maps.event.addDomListener(window, 'load', initialize);
-        console.log("<-- blaaa");
 
         function placeMarker(lat, lng) {
             if (!destinationMarker) {
@@ -194,7 +193,6 @@ angular.module("goebu.controllers")
 
                     var lat = position.coords.latitude;
                     var long = position.coords.longitude;
-                    console.log("<-- getCurrentLocationStart getCurrentPosition FOUND");
                     setUserLocationMarker(lat, long);
                 }, function (err) {
                     console.error(err, "!!! error: getCurrentPosition");
@@ -216,7 +214,6 @@ angular.module("goebu.controllers")
                 function (position) {
                     var lat = position.coords.latitude;
                     var long = position.coords.longitude;
-                    console.log("<-- watchPosition Executed");
 
                     setUserLocationMarker(lat, long);
                 });
@@ -232,10 +229,7 @@ angular.module("goebu.controllers")
         }
 
         function setUserLocationMarker(lat, lng) {
-            console.log(lat, lng, "setUserLocationMarker called <-- lat, lng");
-
             if (!userLocationMarker) {
-                console.log("userLocationMarker is not initialised yet");
                 var userLocationIcon = new google.maps.MarkerImage(
                     "img/user-location-disambig.png",
                     new google.maps.Size(36, 36),
