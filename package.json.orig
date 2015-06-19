@@ -13,6 +13,11 @@
   },
   "devDependencies": {
     "bower": "^1.4.1",
+<<<<<<< Updated upstream
+    "gulp-livereload": "^3.8.0",
+    "gulp-plumber": "^1.0.1",
+=======
+>>>>>>> Stashed changes
     "gulp-util": "^3.0.5",
     "shelljs": "^0.5.1"
   },
