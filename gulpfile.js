@@ -5,24 +5,24 @@ var bower = require('bower');
 var sass = require('gulp-sass');
 var minifyCss = require('gulp-minify-css');
 var rename = require('gulp-rename');
-var sh = require('shelljs');
 var plumber = require('gulp-plumber');
+var sh = require('shelljs');
 
-var paths = {
-    sass: ['./scss/*.scss']
+// Gulp plumber error handler
+var onError = function (err) {
+    console.log(err);
 };
 
-gulp.task('default', ['sass']);
+gulp.task('default', ['sassy']);
 
-gulp.task('sass', function () {
-    gulp.src('./scss/ionic.app.scss')
+gulp.task('sassy', function () {
+    return gulp.src('./scss/ionic.app.scss')
         .pipe(plumber({
-            handleError: function (err) {
-                console.log(err);
-                this.emit('end');
-            }
+            errorHandler: onError
         }))
-        .pipe(sass())
+        .pipe(sass({
+            errLogToConsole: true
+        }))
         .pipe(gulp.dest('./www/css/'))
         .pipe(minifyCss({
             keepSpecialComments: 0
@@ -31,8 +31,12 @@ gulp.task('sass', function () {
         .pipe(gulp.dest('./www/css/'));
 });
 
-gulp.task('watch', function () {
-    gulp.watch(paths.sass, ['sass']);
+gulp.task('watchSass', function () {
+
+    gulp.watch('./scss/**/*.scss').on('change', function (file) {
+        console.log('watchSass', file.path);
+    });
+    gulp.watch('./scss/**/*.scss', ['sassy']);
 });
 
 gulp.task('install', ['git-check'], function () {

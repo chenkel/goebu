@@ -80,6 +80,7 @@ angular.module("goebu.controllers")
         }
 
         function initialize() {
+            console.log("initialize started");
             $ionicNavBarDelegate.title("Wo möchten Sie hin?");
 
             var myLatlng = new google.maps.LatLng(51.5327604, 9.9352051);
@@ -131,6 +132,7 @@ angular.module("goebu.controllers")
         }
 
         google.maps.event.addDomListener(window, 'load', initialize);
+        console.log("<-- blaaa");
 
         function placeMarker(lat, lng) {
             if (!destinationMarker) {

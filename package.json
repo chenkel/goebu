@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "bower": "^1.4.1",
+    "gulp-livereload": "^3.8.0",
     "gulp-plumber": "^1.0.1",
     "gulp-util": "^3.0.5",
     "shelljs": "^0.5.1"
@@ -28,7 +29,9 @@
       "id": "com.phonegap.plugins.PushPlugin"
     },
     "cordova-plugin-whitelist",
-    "cordova-plugin-geolocation"
+    "cordova-plugin-geolocation",
+    "cordova-plugin-crosswalk-webview",
+    "cordova-plugin-splashscreen"
   ],
   "cordovaPlatforms": [
     {
