@@ -9,7 +9,7 @@ var sh = require('shelljs');
 var plumber = require('gulp-plumber');
 
 var paths = {
-    sass: ['./scss/**/*.scss', './scss/*.scss']
+    sass: ['./scss/*.scss']
 };
 
 gulp.task('default', ['sass']);

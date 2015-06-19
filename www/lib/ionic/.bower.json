@@ -41,6 +41,6 @@
     "commit": "3ea71d863e53b7a8d3d75a2757386fd7124b0653"
   },
   "_source": "git://github.com/driftyco/ionic-bower.git",
-  "_target": "1.0.0",
+  "_target": "*",
   "_originalSource": "driftyco/ionic-bower"
 }
