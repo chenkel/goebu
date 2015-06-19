@@ -2,8 +2,8 @@
   "name": "goebu",
   "app_id": "3a1fb0c9",
   "gulpStartupTasks": [
-    "sassy",
-    "watchSass"
+    "sass",
+    "watch"
   ],
   "watchPatterns": [
     "www/**/*",

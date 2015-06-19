@@ -8,9 +8,7 @@ angular.module("goebu.controllers")
 
     .controller('MapCtrl', function ($scope, $ionicLoading, $ionicSlideBoxDelegate, $cordovaGeolocation, $ionicNavBarDelegate) {
 
-        $ionicLoading.show({
-            template: 'Karte wird initialisiert...'
-        });
+
 
         var rendererOptions = {
             draggable: true,
@@ -80,6 +78,9 @@ angular.module("goebu.controllers")
         }
 
         function initialize() {
+            $ionicLoading.show({
+                template: 'Karte wird initialisiert...'
+            });
             console.log("initialize started");
             $ionicNavBarDelegate.title("Wo möchten Sie hin?");
 
@@ -162,6 +163,7 @@ angular.module("goebu.controllers")
             }
             total = total / 1000.0;
         }
+
 
         $scope.centerOnMe = function () {
             if (!$scope.map) {

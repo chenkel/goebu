@@ -9,22 +9,22 @@
 angular.module('goebu', [
     'ionic',
     'ngCordova',
-    'ionic.service.core',
+    //'ionic.service.core',
     'goebu.controllers'
 ])
 
-    .config(['$ionicAppProvider', function ($ionicAppProvider) {
-        // Identify app
-        //$ionicAppProvider.identify({
-        //    // The App ID for the server
-        //    app_id: '3a1fb0c9',
-        //    // The API key all services will use for this app
-        //    api_key: '2a062a84478caa6584fa2bcc34a89cf1ba8b2a1b685acdb1'
-        //});
-        //console.log("<-- Provider");
-    }])
+    //.config(['$ionicAppProvider', function ($ionicAppProvider) {
+    //    // Identify app
+    //    //$ionicAppProvider.identify({
+    //    //    // The App ID for the server
+    //    //    app_id: '3a1fb0c9',
+    //    //    // The API key all services will use for this app
+    //    //    api_key: '2a062a84478caa6584fa2bcc34a89cf1ba8b2a1b685acdb1'
+    //    //});
+    //    //console.log("<-- Provider");
+    //}])
 
-    .run(function ($ionicPlatform, $ionicUser) {
+    .run(function ($ionicPlatform) {
         $ionicPlatform.ready(function () {
             //var user = $ionicUser.get();
             //if (!user.user_id) {
