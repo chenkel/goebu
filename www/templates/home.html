@@ -1,4 +1,4 @@
-<ion-view class="align-left" title="{{title}}" ng-controller="MapCtrl">
+<ion-view class="align-left" ng-controller="MapCtrl">
     <!--<ion-nav-bar class="bar-clear">-->
     <!--&lt;!&ndash;<ion-nav-buttons side="right">&ndash;&gt;-->
     <!--&lt;!&ndash;<button class="button button-icon icon ion-arrow-swap" ng-click=changeDirection()></button>&ndash;&gt;-->
@@ -6,16 +6,21 @@
     <!--</ion-nav-bar>-->
 
     <ion-nav-bar class="bar-light">
+        <ion-nav-buttons side="right">
+        <button class="button button-icon icon ion-arrow-swap" ng-click=swapMarkers()></button>
+        </ion-nav-buttons>
+
+
 
     </ion-nav-bar>
-    <ion-content
-            header-shrink-twitter-style
-            scroll-event-interval="5"
-            ng-controller="MapCtrl">
-
-        <!--<div scroll="false" data-tap-disabled="true" class="map-wrapper">-->
-        <div class="map-wrapper">
-            <div id="map_canvas"></div>
+    <ion-content ng-controller="MapCtrl">
+        <!--header-shrink-twitter-style-->
+        <!--scroll-event-interval="5"-->
+        <div ng-class="{'map-wrapper second-stage': isSecondStage, 'map-wrapper': true}">
+            <div scroll="false"
+                 data-tap-disabled="true">
+                <div id="map_canvas">{{isSecondStage}}</div>
+            </div>
         </div>
 
         <ion-list>
