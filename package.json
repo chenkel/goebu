@@ -21,7 +21,6 @@
     "url": "https://github.com/chenkel/goebu.git"
   },
   "cordovaPlugins": [
-    "plugin.google.maps",
     {
       "locator": "https://github.com/phonegap-build/PushPlugin.git",
       "id": "com.phonegap.plugins.PushPlugin"
@@ -29,7 +28,13 @@
     "cordova-plugin-whitelist",
     "cordova-plugin-geolocation",
     "cordova-plugin-crosswalk-webview",
-    "cordova-plugin-splashscreen"
+    "org.apache.cordova.statusbar",
+    "cordova-plugin-device",
+    {
+      "locator": "https://github.com/VitaliiBlagodir/cordova-plugin-datepicker.git",
+      "id": "cordova-plugin-datepicker"
+    },
+    "cordova-plugin-dialogs"
   ],
   "cordovaPlatforms": [
     {

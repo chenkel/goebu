@@ -1,16 +1,30 @@
-<ion-view class="align-left" title="{{userHint}}" ng-controller="MapCtrl" >
+<ion-view class="align-left" ng-controller="MapCtrl">
     <ion-nav-bar class="bar-light">
+        <ion-nav-title>
+            {{userHint}}
+        </ion-nav-title>
         <ion-nav-buttons side="right">
-            <button class="button button-icon icon ion-arrow-swap" ng-click=swapMarkers()></button>
+            <div ng-show="routeCalculated">
+                <button
+                        class="button button-icon icon ion-arrow-swap"
+                        ng-click=swapMarkers()
+                        ng-show="routeCalculated">
+                </button>
+                <button
+                        class="button button-icon icon ion-clock"
+                        ng-click=setTime()
+                        ng-show="routeCalculated">
+                </button>
+            </div>
         </ion-nav-buttons>
     </ion-nav-bar>
     <ion-content>
         <!--header-shrink-twitter-style-->
         <!--scroll-event-interval="5"-->
         <div class="map-wrapper">
-            <!--<div scroll="false" data-tap-disabled="true">-->
+            <div scroll="false" data-tap-disabled="true">
                 <div id="map_canvas"></div>
-            <!--</div>-->
+            </div>
         </div>
         <ion-list>
             <ion-slide-box on-slide-changed="slideHasChanged($index)" show-pager="false">

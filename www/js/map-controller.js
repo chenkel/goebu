@@ -3,12 +3,10 @@
 // GLOBAL variables
 var originMarker, destinationMarker, userLocationMarker;
 var watch;
+var departureOrArrivalTime, isDeparture;
 
 angular.module("goebu.controllers")
-    .controller('MapCtrl', function ($scope, $ionicLoading, $ionicSlideBoxDelegate, $cordovaGeolocation, $ionicNavBarDelegate, $ionicPlatform) {
-
-
-
+    .controller('MapCtrl', function ($scope, $ionicLoading, $ionicSlideBoxDelegate, $cordovaGeolocation, $ionicNavBarDelegate, $ionicPlatform, $cordovaDatePicker, $cordovaDialogs) {
 
         var rendererOptions = {
             draggable: true,
@@ -21,7 +19,53 @@ angular.module("goebu.controllers")
 
         var currentBusLines;
         var previousRouteIndex;
-        $scope.userHint = '';
+        $scope.userHint = 'Wo möchten Sie hin?';
+        $scope.routeCalculated = false;
+
+        $scope.setTime = function () {
+
+            $cordovaDialogs.confirm('', 'Möchten Sie die Abfahrts- oder Ankunftzeit festlegen?', ['Abfahrt', 'Ankunft', '... abbrechen'])
+                .then(function (buttonIndex) {
+                    // no button = 0, 'OK' = 1, 'Cancel' = 2
+                    switch (buttonIndex) {
+                        case 1:
+                            isDeparture = true;
+                            displayTimePicker();
+                            break;
+                        case 2:
+                            isDeparture = false;
+                            displayTimePicker();
+                            break;
+                        case 4:
+                            break;
+                    }
+                });
+
+        };
+
+        function displayTimePicker() {
+            var timePickerDate = (departureOrArrivalTime) ? departureOrArrivalTime : new Date();
+            var options = {
+                date: timePickerDate,
+                mode: 'time', // or 'time'
+                minDate: new Date(),
+                allowOldDates: true,
+                allowFutureDates: true,
+                doneButtonLabel: 'Route berechnen',
+                doneButtonColor: '#000000',
+                cancelButtonLabel: 'Abbrechen',
+                cancelButtonColor: '#000000'
+
+            };
+            $cordovaDatePicker.show(options).then(function (date) {
+                //alert(date);
+                if (date) {
+                    departureOrArrivalTime = date;
+                    $scope.calcRoute();
+                }
+
+            });
+        }
 
         $scope.calcRoute = function () {
             if (originMarker && destinationMarker) {
@@ -39,12 +83,20 @@ angular.module("goebu.controllers")
                     travelMode: google.maps.TravelMode.TRANSIT,
                     provideRouteAlternatives: true
                 };
+                if (departureOrArrivalTime) {
+                    if (isDeparture) {
+                        request.transitOptions = {departureTime: departureOrArrivalTime};
+                    } else if (isDeparture === false) {
+                        request.transitOptions = {arrivalTime: departureOrArrivalTime};
+                    }
+                }
                 directionsService.route(request, function (response, status) {
                     if (status === google.maps.DirectionsStatus.OK) {
 
                         directionsDisplay.setDirections(response);
                         console.log(response, "directionsService.route <-- response");
                         $ionicLoading.hide();
+                        $scope.routeCalculated = true;
 
                     }
                     else {
@@ -77,7 +129,24 @@ angular.module("goebu.controllers")
             return r;
         }
 
-        ionic.Platform.ready(function(){
+        // bb is the bounding box
+        var bb = {};
+        //(ix,iy) are its top-left coordinates
+        bb.ix = 51.722693;
+        bb.iy = 9.627836;
+        //and (ax,ay) its bottom-right coordinates.
+        bb.ax = 51.459781;
+        bb.ay = 10.128727;
+        function isInsideOfGoettingenBounds(lat, lng) {
+            return (
+                lat <= bb.ix &&
+                lat >= bb.ax &&
+                lng >= bb.iy &&
+                lng <= bb.ay
+            );
+        }
+
+        ionic.Platform.ready(function () {
             $ionicLoading.show({
                 template: 'Karte wird initialisiert...'
             });
@@ -86,12 +155,11 @@ angular.module("goebu.controllers")
 
         function initializeMap() {
 
-
             var myLatlng = new google.maps.LatLng(51.5327604, 9.9352051);
 
             var mapOptions = {
                 center: myLatlng,
-                zoom: 15,
+                zoom: 12,
                 mapTypeId: google.maps.MapTypeId.ROADMAP,
                 disableDefaultUI: true
             };
@@ -163,7 +231,6 @@ angular.module("goebu.controllers")
             total = total / 1000.0;
         }
 
-
         $scope.centerOnMe = function () {
             if (!$scope.map) {
                 return;
@@ -186,9 +253,10 @@ angular.module("goebu.controllers")
         //Aktuelle Position
 
         function getCurrentLocationStart() {
+            console.log("!!!@!@£@£!@£!@£updateeeeed");
 
             $cordovaGeolocation
-                .getCurrentPosition()
+                .getCurrentPosition({timeout: 10000, enableHighAccuracy: false})
                 .then(function (position) {
 
                     var lat = position.coords.latitude;
@@ -199,11 +267,11 @@ angular.module("goebu.controllers")
                 });
 
             var watchOptions = {
-                frequency: 1000,
-                timeout: 3000,
-                enableHighAccuracy: true // may cause errors if true
+                frequency: 15 * 60 * 1000,
+                timeout: 1 * 60 * 1000,
+                enableHighAccuracy: false
             };
-
+            console.log("updateeeeed");
             watch = $cordovaGeolocation.watchPosition(watchOptions);
             watch.then(
                 null,
@@ -212,6 +280,7 @@ angular.module("goebu.controllers")
 
                 },
                 function (position) {
+                    console.log("watchPosition");
                     var lat = position.coords.latitude;
                     var long = position.coords.longitude;
 
@@ -220,6 +289,7 @@ angular.module("goebu.controllers")
 
             //watch.clearWatch();
             //// OR
+
             //$cordovaGeolocation.clearWatch(watch)
             //    .then(function (result) {
             //        console.log(result, "<-- clearWatch result, ");
@@ -230,19 +300,30 @@ angular.module("goebu.controllers")
 
         function setUserLocationMarker(lat, lng) {
             if (!userLocationMarker) {
+                var userLocationIconPath = "img/user-location.png";
+                if (!isInsideOfGoettingenBounds(lat, lng)) {
+                    userLocationIconPath = "img/user-location-gray.png";
+                    // Set it to Gaenseliesl
+                    lat = '51.5326892';
+                    lng = '9.9353077';
+                }
+
                 var userLocationIcon = new google.maps.MarkerImage(
-                    "img/user-location-disambig.png",
+                    userLocationIconPath,
                     new google.maps.Size(36, 36),
                     new google.maps.Point(0, 0),
                     new google.maps.Point(18, 18),
                     new google.maps.Size(36, 36)
                 );
+
                 userLocationMarker = new google.maps.Marker({
                     position: new google.maps.LatLng(lat, lng),
                     map: map,
                     draggable: false,
                     icon: userLocationIcon
                 });
+                map.setCenter(userLocationMarker.position);
+
                 //when the map zoom changes,
                 // resize the icon based on the zoom level
                 // so the marker covers the same geographic area
@@ -275,9 +356,22 @@ angular.module("goebu.controllers")
                 //
                 //});
             } else {
-
                 if (userLocationMarker.getPosition().lat() !== lat || userLocationMarker.getPosition().lng() !== lng) {
-                    console.log("userLocationMarker setting new position");
+                    var userLocationIconPathWatch = "img/user-location.png";
+                    if (!isInsideOfGoettingenBounds(lat, lng)) {
+                        userLocationIconPathWatch = "img/user-location-gray.png";
+
+                        // Set it to Gaenseliesl
+                        lat = '51.5326892';
+                        lng = '9.9353077';
+                    }
+                    userLocationMarker.setIcon(new google.maps.MarkerImage(
+                        userLocationIconPathWatch,
+                        new google.maps.Size(36, 36),
+                        new google.maps.Point(0, 0),
+                        new google.maps.Point(18, 18),
+                        new google.maps.Size(36, 36)
+                    ));
                     userLocationMarker.setPosition(new google.maps.LatLng(lat, lng));
                 }
 
