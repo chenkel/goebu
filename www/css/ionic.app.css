@@ -7686,21 +7686,23 @@ a.button {
 .map-wrapper {
   width: 100%;
   height: 100%; }
-  @media screen and (max-height: 480px) {
-    .map-wrapper.second-stage {
-      padding-bottom: 350px; } }
-  @media screen and (min-height: 480px) {
-    .map-wrapper.second-stage {
-      padding-bottom: 350px; } }
-  @media screen and (min-height: 560px) {
-    .map-wrapper.second-stage {
-      padding-bottom: 470px; } }
-  @media screen and (min-height: 800px) {
-    .map-wrapper.second-stage {
-      padding-bottom: 720px; } }
-  @media screen and (min-height: 1100px) {
-    .map-wrapper.second-stage {
-      padding-bottom: 1010px; } }
+  .map-wrapper.second-stage {
+    position: relative; }
+    @media screen and (max-height: 480px) {
+      .map-wrapper.second-stage {
+        padding-bottom: 350px; } }
+    @media screen and (min-height: 480px) {
+      .map-wrapper.second-stage {
+        padding-bottom: 350px; } }
+    @media screen and (min-height: 560px) {
+      .map-wrapper.second-stage {
+        padding-bottom: 470px; } }
+    @media screen and (min-height: 800px) {
+      .map-wrapper.second-stage {
+        padding-bottom: 720px; } }
+    @media screen and (min-height: 1100px) {
+      .map-wrapper.second-stage {
+        padding-bottom: 1010px; } }
 
 #map_canvas {
   top: 0;
@@ -7710,14 +7712,6 @@ a.button {
   position: absolute; }
   #map_canvas.second-stage {
     position: absolute; }
-
-.map-wrapper.second-stage-add {
-  height: initial;
-  opacity: 0.4; }
-
-.map-wrapper.second-stage-add-active {
-  height: initial;
-  opacity: 0.4; }
 
 .currentLocationControl {
   padding-right: 10px;

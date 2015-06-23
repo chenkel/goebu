@@ -19,6 +19,9 @@
   height: 100%;
 
   &.second-stage {
+    position: relative;
+    //height: auto;
+
     @media screen and (max-height: 480px) {
       padding-bottom: 350px;
     }
@@ -51,15 +54,15 @@
 
 }
 
-.map-wrapper.second-stage-add{
-  height: initial;
-  opacity: 0.4;
-}
-
-.map-wrapper.second-stage-add-active{
-  height: initial;
-  opacity: 0.4;
-}
+//.map-wrapper.second-stage-add{
+//  height: initial;
+//  opacity: 0.4;
+//}
+//
+//.map-wrapper.second-stage-add-active{
+//  height: initial;
+//  opacity: 0.4;
+//}
 
 // Controls Styling
 .currentLocationControl {

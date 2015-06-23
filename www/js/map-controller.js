@@ -16,10 +16,11 @@ angular.module("goebu.controllers")
         var directionsService = new google.maps.DirectionsService();
 
         var map;
+        var mapCanvasDiv, scrollDiv, mapWrapperDiv;
 
         var currentBusLines;
         var previousRouteIndex;
-        $scope.userHint = 'Wo möchten Sie hin?';
+
         $scope.routeCalculated = false;
 
         $scope.setTime = function () {
@@ -70,7 +71,6 @@ angular.module("goebu.controllers")
         $scope.calcRoute = function () {
             if (originMarker && destinationMarker) {
                 console.log("calculating new route");
-                $ionicNavBarDelegate.title("Start und Ziel lassen sich jetzt noch verschieben.");
 
                 console.log($scope.userHint, "<-- $scope.userHint");
 
@@ -95,14 +95,42 @@ angular.module("goebu.controllers")
 
                         directionsDisplay.setDirections(response);
                         console.log(response, "directionsService.route <-- response");
-                        $ionicLoading.hide();
                         $scope.routeCalculated = true;
+                        var titleText = 'Route';
+                        if (response.hasOwnProperty('routes')) {
+                            var nRoutes = response.routes.length;
+                            if (nRoutes > 1) {
+                                titleText = nRoutes + ' ' + titleText + 'n';
+                            } else if (nRoutes === 1) {
+                                titleText = nRoutes + ' ' + titleText;
+                            }
+                        }
+                        if (mapCanvasDiv && mapWrapperDiv && scrollDiv) {
+                            angular.element(mapCanvasDiv).addClass('second-stage');
+                            angular.element(mapWrapperDiv).addClass('second-stage');
+                            angular.element(scrollDiv).addClass('second-stage');
+                            google.maps.event.trigger(map, 'resize');
+
+                        }
+                        titleText = titleText + ' gefunden';
+                        $ionicNavBarDelegate.title(titleText);
 
                     }
                     else {
                         console.log(status, response, "<-- directionsService.route status response");
-                        $ionicLoading.hide();
+                        if (status === 'ZERO_RESULTS') {
+                            $ionicNavBarDelegate.title('Leider keine Route gefunden...');
+                        }
+                        if (mapCanvasDiv && mapWrapperDiv && scrollDiv) {
+                            angular.element(mapCanvasDiv).removeClass('second-stage');
+                            angular.element(mapWrapperDiv).removeClass('second-stage');
+                            angular.element(scrollDiv).removeClass('second-stage');
+                            google.maps.event.trigger(map, 'resize');
+                        }
+
                     }
+                    $ionicLoading.hide();
+
                 });
             }
 
@@ -117,6 +145,12 @@ angular.module("goebu.controllers")
 
             $scope.calcRoute();
         };
+
+        $scope.watchPositionId = null;
+        $scope.$on('$destroy', function () {
+            $scope.watchPositionID.clearWatch();
+            $scope.watchPositionId = null;
+        });
 
         function make_array_unique(arr) {
             var n = {}, r = [];
@@ -163,7 +197,11 @@ angular.module("goebu.controllers")
                 mapTypeId: google.maps.MapTypeId.ROADMAP,
                 disableDefaultUI: true
             };
-            map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+            mapCanvasDiv = document.getElementById("map_canvas");
+            scrollDiv = document.getElementsByClassName('scroll');
+            mapWrapperDiv = document.getElementsByClassName('map-wrapper');
+
+            map = new google.maps.Map(mapCanvasDiv, mapOptions);
 
             var currentLocationControlDiv = document.createElement('div');
             currentLocationControlDiv.className = 'currentLocationControl';
@@ -199,7 +237,9 @@ angular.module("goebu.controllers")
             $scope.map = map;
 
             $ionicLoading.hide();
-            $scope.userHint = "Wo möchten Sie hin?";
+            //$scope.userHint = "Wo möchten Sie hin?";
+            $ionicNavBarDelegate.align('left');
+            $ionicNavBarDelegate.title("Wo möchten Sie hin?");
         }
 
         function placeMarker(lat, lng) {
@@ -252,31 +292,34 @@ angular.module("goebu.controllers")
 
         //Aktuelle Position
 
+        var posOptions = {timeout: 10000, enableHighAccuracy: false};
+        var watchOptions = {
+            frequency: 1000,
+            timeout: 3000,
+            enableHighAccuracy: false // may cause errors if true
+        };
+
         function getCurrentLocationStart() {
-            console.log("!!!@!@£@£!@£!@£updateeeeed");
 
             $cordovaGeolocation
-                .getCurrentPosition({timeout: 10000, enableHighAccuracy: false})
+                .getCurrentPosition(posOptions)
                 .then(function (position) {
-
                     var lat = position.coords.latitude;
                     var long = position.coords.longitude;
                     setUserLocationMarker(lat, long);
-                }, function (err) {
-                    console.error(err, "!!! error: getCurrentPosition");
+                }, function (error) {
+                    console.error('Error w/ getCurrentPosition: ' + JSON.stringify(error));
+
                 });
 
-            var watchOptions = {
-                frequency: 15 * 60 * 1000,
-                timeout: 1 * 60 * 1000,
-                enableHighAccuracy: false
-            };
-            console.log("updateeeeed");
-            watch = $cordovaGeolocation.watchPosition(watchOptions);
-            watch.then(
+            if (!$scope.watchPositionID) {
+                $scope.watchPositionID = $cordovaGeolocation.watchPosition(watchOptions);
+            }
+
+            $scope.watchPositionID.then(
                 null,
-                function (err) {
-                    console.error(err, "!!! error: watchPosition");
+                function (error) {
+                    console.error('Error w/ watchPosition: ' + JSON.stringify(error));
 
                 },
                 function (position) {
@@ -286,16 +329,6 @@ angular.module("goebu.controllers")
 
                     setUserLocationMarker(lat, long);
                 });
-
-            //watch.clearWatch();
-            //// OR
-
-            //$cordovaGeolocation.clearWatch(watch)
-            //    .then(function (result) {
-            //        console.log(result, "<-- clearWatch result, ");
-            //    }, function (error) {
-            //        // error
-            //    });
         }
 
         function setUserLocationMarker(lat, lng) {

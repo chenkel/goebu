@@ -1,8 +1,6 @@
-<ion-view class="align-left" ng-controller="MapCtrl">
+<ion-view ng-controller="MapCtrl">
     <ion-nav-bar class="bar-light">
-        <ion-nav-title>
-            {{userHint}}
-        </ion-nav-title>
+
         <ion-nav-buttons side="right">
             <div ng-show="routeCalculated">
                 <button
@@ -16,6 +14,7 @@
                         ng-show="routeCalculated">
                 </button>
             </div>
+
         </ion-nav-buttons>
     </ion-nav-bar>
     <ion-content>
@@ -27,13 +26,10 @@
             </div>
         </div>
         <ion-list>
-            <ion-slide-box on-slide-changed="slideHasChanged($index)" show-pager="false">
-                <ion-slide>
-                    <div class="card">
-                        <div id="directions-panel"></div>
-                    </div>
-                </ion-slide>
-            </ion-slide-box>
+
+            <div class="card">
+                <div id="directions-panel"></div>
+            </div>
         </ion-list>
     </ion-content>
 </ion-view>

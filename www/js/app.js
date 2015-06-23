@@ -24,7 +24,7 @@ angular.module('goebu', [
         });
     }])
 
-    .run(function ($ionicPlatform, $ionicUser, $ionicDeploy) {
+    .run(function ($ionicPlatform, $ionicUser, $ionicDeploy, $cordovaDialogs, $ionicLoading) {
         $ionicPlatform.ready(function () {
             var user = $ionicUser.get();
             if (!user.user_id) {
@@ -52,42 +52,37 @@ angular.module('goebu', [
             //    console.log(err, "<-- err");
             //});
 
-            //$ionicDeploy.check().then(function (response) {
-            //        // response will be true/false
-            //        if (response) {
-            //            console.log("ionicDeploy - New updates available");
-            //            // Download the updates
-            //            $ionicDeploy.download().then(function () {
-            //                // Extract the updates
-            //                $ionicDeploy.extract().then(function () {
-            //                    // Load the updated version
-            //                    $ionicDeploy.load();
-            //                }, function (error) {
-            //                    console.log(error, "ionicDeploy - Error extracting");
-            //                    // Error extracting
-            //                }, function (progress) {
-            //                    // Do something with the zip extraction progress
-            //                    console.log(progress, "ionicDeploy - progress unzipping");
-            //                    //$scope.extraction_progress = progress;
-            //                });
-            //            }, function (error) {
-            //                // Error downloading the updates
-            //                console.log(error, "ionicDeploy - Error downloading the updates");
-            //            }, function (progress) {
-            //                // Do something with the download progress
-            //                console.log(progress, "ionicDeploy - progress downloading");
-            //                //$scope.download_progress = progress;
-            //            });
-            //        } else {
-            //            console.log("ionicDeploy - No new updates available");
-            //            // No updates, load the most up to date version of the app
-            //            $ionicDeploy.load();
-            //        }
-            //    },
-            //    function (error) {
-            //        // Error checking for updates
-            //        console.log(error, "ionicDeploy - Error checking for updates");
-            //    });
+            $ionicDeploy.check().then(function (response) {
+                    // response will be true/false
+                    if (response) {
+                        console.log("ionicDeploy - New updates available");
+                        $cordovaDialogs.confirm('', 'Möchten Sie neuste Version installieren?', ['Ja, gerne.', 'Noch nicht, danke!'])
+                            .then(function (buttonIndex) {
+                                // no button = 0, 'OK' = 1, 'Cancel' = 2
+                                switch (buttonIndex) {
+                                    case 1:
+                                        downloadAndInstallUpdate();
+                                        break;
+                                    case 2:
+                                        $ionicDeploy.load();
+                                        break;
+
+                                }
+                            });
+                        // Download the updates
+
+                    } else {
+                        console.log("ionicDeploy - No new updates available");
+                        // No updates, load the most up to date version of the app
+                        $ionicDeploy.load();
+                    }
+                },
+                function (error) {
+                    // Error checking for updates
+                    console.error(error, "ionicDeploy - Error checking for updates");
+                });
+
+
 
             // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
             // for form inputs)
@@ -106,6 +101,36 @@ angular.module('goebu', [
             }
 
         });
+        function downloadAndInstallUpdate(){
+            $ionicDeploy.download().then(function () {
+                // Extract the updates
+                $ionicDeploy.extract().then(function () {
+                    // Load the updated version
+                    $ionicDeploy.load();
+                }, function (error) {
+                    console.log(error, "ionicDeploy - Error extracting");
+                    // Error extracting
+                }, function (progress) {
+                    // Do something with the zip extraction progress
+                    //console.log(progress, "ionicDeploy - progress unzipping");
+                    $ionicLoading.show({
+                        template: 'Installiere Update - ' + progress + "% kopiert."
+                    });
+
+                    //$scope.extraction_progress = progress;
+                });
+            }, function (error) {
+                // Error downloading the updates
+                console.error(error, "ionicDeploy - Error downloading the updates");
+            }, function (progress) {
+                // Do something with the download progress
+                //console.log(progress, "ionicDeploy - progress downloading");
+                $ionicLoading.show({
+                    template: 'Lade Update herunter - ' + progress  + "% geladen."
+                });
+                //$scope.download_progress = progress;
+            });
+        }
     })
 
     .config(function ($stateProvider, $urlRouterProvider) {
@@ -137,5 +162,6 @@ angular.module('goebu', [
             //});
 // if none of the above states are matched, use this as the fallback
         $urlRouterProvider.otherwise('/app');
-    })
-;
+    });
+
+
