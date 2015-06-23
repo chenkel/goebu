@@ -49,30 +49,30 @@ angular.module("goebu.controllers")
                 });
 
         };
-        var displayTimePickerOptions = {
-            mode: 'datetime', // or 'time'
-            minDate: moment().subtract(100, 'years').toDate(),
-            allowOldDates: true,
-            allowFutureDates: true,
-            doneButtonLabel: 'Route berechnen',
-            doneButtonColor: '#0000FF',
-            cancelButtonLabel: 'Abbrechen',
-            cancelButtonColor: '#000000',
-            is24Hour: true,
-            nowText: "Jetzt"
-            //okText: 'Ok',
-            //cancelText: "Abbrechen"
 
-        };
         function displayTimePicker() {
-
             var timePickerDate = (departureOrArrivalTime) ? departureOrArrivalTime : new Date();
+            var displayTimePickerOptions = {
+                mode: 'datetime', // or 'time'
+                date: timePickerDate,
+                minDate: moment().subtract(100, 'years').toDate(),
+                allowOldDates: true,
+                allowFutureDates: true,
+                doneButtonLabel: 'Route berechnen',
+                doneButtonColor: '#0000FF',
+                cancelButtonLabel: 'Abbrechen',
+                cancelButtonColor: '#000000',
+                is24Hour: true,
+                nowText: "Jetzt"
+                //okText: 'Ok',
+                //cancelText: "Abbrechen"
+
+            };
             if (isAndroid) {
                 //timePickerDate = timePickerDate.valueOf();
                 displayTimePickerOptions.mode = 'time';
                 displayTimePickerOptions.minDate = displayTimePickerOptions.minDate.valueOf();
             }
-            displayTimePickerOptions.date = timePickerDate;
 
             $cordovaDatePicker.show(displayTimePickerOptions).then(function (date) {
                 //alert(date);
