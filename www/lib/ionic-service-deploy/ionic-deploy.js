@@ -125,7 +125,6 @@ angular.module('ionic.service.deploy', ['ionic.service.core'])
 
         if (typeof IonicDeploy != "undefined") {
           IonicDeploy.check($ionicApp.getApp().app_id, function(result) {
-            console.log("DEBUG DEPLOY: " + result);
             deferred.resolve(result === 'true');
           }, function(error) {
             deferred.reject(error);

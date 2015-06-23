@@ -7765,6 +7765,9 @@ a.button {
 .align-left {
   text-align: left !important; }
 
+.header-item {
+  color: #008800 !important; }
+
 .bar.bar-light.bar-light-blue {
   background-color: rgba(106, 171, 241, 0.4); }
 

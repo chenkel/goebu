@@ -20,12 +20,18 @@ angular.module("goebu.controllers")
 
         var currentBusLines;
         var previousRouteIndex;
+        var isIOS = ionic.Platform.isIOS();
+        var isAndroid = ionic.Platform.isAndroid();
 
         $scope.routeCalculated = false;
 
+        var confirmButtons = ['Abfahrt', 'Ankunft'];
+        if (isIOS){
+            confirmButtons.push('... weder noch');
+        }
         $scope.setTime = function () {
 
-            $cordovaDialogs.confirm('', 'Möchten Sie die Abfahrts- oder Ankunftzeit festlegen?', ['Abfahrt', 'Ankunft', '... abbrechen'])
+            $cordovaDialogs.confirm('Möchten Sie die Abfahrts- oder Ankunftzeit ändern?', 'Zeit', confirmButtons)
                 .then(function (buttonIndex) {
                     // no button = 0, 'OK' = 1, 'Cancel' = 2
                     switch (buttonIndex) {
@@ -43,22 +49,32 @@ angular.module("goebu.controllers")
                 });
 
         };
+        var displayTimePickerOptions = {
+            mode: 'datetime', // or 'time'
+            minDate: moment().subtract(100, 'years').toDate(),
+            allowOldDates: true,
+            allowFutureDates: true,
+            doneButtonLabel: 'Route berechnen',
+            doneButtonColor: '#0000FF',
+            cancelButtonLabel: 'Abbrechen',
+            cancelButtonColor: '#000000',
+            is24Hour: true,
+            nowText: "Jetzt"
+            //okText: 'Ok',
+            //cancelText: "Abbrechen"
 
+        };
         function displayTimePicker() {
-            var timePickerDate = (departureOrArrivalTime) ? departureOrArrivalTime : new Date();
-            var options = {
-                date: timePickerDate,
-                mode: 'time', // or 'time'
-                minDate: new Date(),
-                allowOldDates: true,
-                allowFutureDates: true,
-                doneButtonLabel: 'Route berechnen',
-                doneButtonColor: '#000000',
-                cancelButtonLabel: 'Abbrechen',
-                cancelButtonColor: '#000000'
 
-            };
-            $cordovaDatePicker.show(options).then(function (date) {
+            var timePickerDate = (departureOrArrivalTime) ? departureOrArrivalTime : new Date();
+            if (isAndroid) {
+                //timePickerDate = timePickerDate.valueOf();
+                displayTimePickerOptions.mode = 'time';
+                displayTimePickerOptions.minDate = displayTimePickerOptions.minDate.valueOf();
+            }
+            displayTimePickerOptions.date = timePickerDate;
+
+            $cordovaDatePicker.show(displayTimePickerOptions).then(function (date) {
                 //alert(date);
                 if (date) {
                     departureOrArrivalTime = date;
@@ -71,8 +87,6 @@ angular.module("goebu.controllers")
         $scope.calcRoute = function () {
             if (originMarker && destinationMarker) {
                 console.log("calculating new route");
-
-                console.log($scope.userHint, "<-- $scope.userHint");
 
                 $ionicLoading.show({
                     template: 'Route wird berechnet...'
@@ -323,7 +337,6 @@ angular.module("goebu.controllers")
 
                 },
                 function (position) {
-                    console.log("watchPosition");
                     var lat = position.coords.latitude;
                     var long = position.coords.longitude;
 
