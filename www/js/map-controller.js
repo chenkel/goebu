@@ -1,7 +1,9 @@
 "use strict";
 
 // GLOBAL variables
-var host = "http://localhost:3000/";
+//var host = "http://localhost:3000/";
+var host = "http://goebu.christopherhenkel.de:3000/";
+
 var originMarker, destinationMarker, userLocationMarker;
 var departureOrArrivalTime, isDeparture;
 var live_bus_position_timer;
@@ -539,6 +541,8 @@ angular.module("goebu.controllers")
                     console.log(currentBusLines, "<-- currentBusLines");
                     if (currentBusLines.length > 0) {
                         restartLiveBusTimer();
+                    } else {
+                        stopLiveBusTimer();
                     }
                 }
             }
@@ -607,6 +611,10 @@ angular.module("goebu.controllers")
             $timeout.cancel(live_bus_position_timer);
             $scope.updateBusMarker();
             $scope.startLiveBusMarker();
+        }
+
+        function stopLiveBusTimer(){
+            $timeout.cancel(live_bus_position_timer);
         }
 
     });
