@@ -1,12 +1,13 @@
 "use strict";
 
 // GLOBAL variables
+var host = "http://localhost:3000/";
 var originMarker, destinationMarker, userLocationMarker;
-var watch;
 var departureOrArrivalTime, isDeparture;
+var live_bus_position_timer;
 
 angular.module("goebu.controllers")
-    .controller('MapCtrl', function ($scope, $ionicLoading, $ionicSlideBoxDelegate, $cordovaGeolocation, $ionicNavBarDelegate, $ionicPlatform, $cordovaDatePicker, $cordovaDialogs) {
+    .controller('MapCtrl', function ($scope, $ionicLoading, $ionicSlideBoxDelegate, $cordovaGeolocation, $ionicNavBarDelegate, $ionicPlatform, $cordovaDatePicker, $cordovaDialogs, $http, $timeout) {
 
         var rendererOptions = {
             draggable: true,
@@ -26,7 +27,7 @@ angular.module("goebu.controllers")
         $scope.routeCalculated = false;
 
         var confirmButtons = ['Abfahrt', 'Ankunft'];
-        if (isIOS){
+        if (isIOS) {
             confirmButtons.push('... weder noch');
         }
         $scope.setTime = function () {
@@ -201,9 +202,35 @@ angular.module("goebu.controllers")
             initializeMap();
         });
 
+        function fixInfoWindow() {
+            //keep a reference to the original setPosition-function
+            var fx = google.maps.InfoWindow.prototype.setPosition;
+
+//override the built-in setPosition-method
+            google.maps.InfoWindow.prototype.setPosition = function () {
+
+                //logAsInternal isn't documented, but as it seems
+                //it's only defined for InfoWindows opened on POI's
+                if (this.logAsInternal) {
+                    google.maps.event.addListenerOnce(this, 'map_changed', function () {
+                        var map = this.getMap();
+                        //the infoWindow will be opened, usually after a click on a POI
+                        if (map) {
+                            //trigger the click
+                            google.maps.event.trigger(map, 'click', {latLng: this.getPosition()});
+                        }
+                    });
+                }
+                //call the original setPosition-method
+                fx.apply(this, arguments);
+            };
+        }
+
         function initializeMap() {
 
             var myLatlng = new google.maps.LatLng(51.5327604, 9.9352051);
+
+            fixInfoWindow();
 
             var mapOptions = {
                 center: myLatlng,
@@ -464,16 +491,6 @@ angular.module("goebu.controllers")
 
         }
 
-        //function animateUIToSecondStage() {
-        //    $scope.isSecondStage = true;
-        //    //angular.element(".map-wrapper").animate({
-        //    //    height: '50%',
-        //    //    minHeight: '50%'
-        //    //}, 1500, function () {
-        //    //    google.maps.event.trigger(map, 'resize');
-        //    //});
-        //}
-
         function directionsDisplayUpdated() {
             var routeIndex = directionsDisplay && directionsDisplay.hasOwnProperty('routeIndex') ? directionsDisplay.routeIndex : null;
             if (previousRouteIndex !== routeIndex) {
@@ -520,8 +537,76 @@ angular.module("goebu.controllers")
                     }
                     currentBusLines = make_array_unique(currentBusLines);
                     console.log(currentBusLines, "<-- currentBusLines");
+                    if (currentBusLines.length > 0) {
+                        restartLiveBusTimer();
+                    }
                 }
             }
+        }
+
+        var liveBusPositions = [];
+        $scope.updateBusMarker = function (cb) {
+            // TODO: currentBusLines and direction need to be defined properly
+            var url = host + "api/shapes/goevb/route/" + currentBusLines[0] +
+                "/direction/0";
+            $http.get(url)
+                .success(function (result) {
+                    if (result.live_sequences && result.live_sequences.length > 0) {
+                        var data = result.live_sequences;
+                        var nData = data.length;
+                        var nPreviousData = liveBusPositions.length;
+
+                        if (nPreviousData !== nData) {
+                            liveBusPositions = clear_markers(liveBusPositions);
+                        }
+                        for (var j = 0, len2 = data.length; j < len2; j++) {
+                            if (!liveBusPositions[j]) {
+                                //TODO: choose sensible title and icon
+                                liveBusPositions.push(new google.maps.Marker({
+                                    //title: "yipeeee",
+                                    position: new google.maps.LatLng(data[j].lat, data[j].lon),
+                                    icon: "img/bus.png",
+                                    map: $scope.map,
+                                    zIndex: 1000
+                                }));
+                            } else {
+                                liveBusPositions[j].setPosition(new google.maps.LatLng(data[j].lat, data[j].lon));
+                            }
+                        }
+                        if (cb) {
+                            cb();
+                        }
+                    } else {
+                        liveBusPositions = clear_markers(liveBusPositions);
+                        console.log("No live bus information available");
+                    }
+                }.bind($scope))
+                .error(function (error) {
+                    console.error(error, "error");
+                });
+        };
+
+        $scope.startLiveBusMarker = function () {
+            // Function to replicate setInterval using $timeout service.
+            live_bus_position_timer = $timeout(function () {
+                $scope.updateBusMarker();
+                $scope.startLiveBusMarker();
+            }.bind($scope), 6000);
+        };
+
+        function clear_markers(markerArray) {
+
+            for (var i = 0; i < markerArray.length; i++) {
+                markerArray[i].setMap(null);
+            }
+            markerArray.length = 0;
+            return [];
+        }
+
+        function restartLiveBusTimer() {
+            $timeout.cancel(live_bus_position_timer);
+            $scope.updateBusMarker();
+            $scope.startLiveBusMarker();
         }
 
     });

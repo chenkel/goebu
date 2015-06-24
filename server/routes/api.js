@@ -87,10 +87,11 @@ var gtfs = require("../lib/gtfs");
 //    });
 //});
 
+
 router.get("/shapes/:agency/direction/:direction_id/stop/:stop_id", function (req, res, next) {
     var agency_key = req.params.agency,
         stop_id = req.params.stop_id,
-        direction_id = parseInt(req.params.direction_id, 10);
+        direction_id = parseInt(req.params.direction_id);
     gtfs.getAllLiveBusShapes(agency_key, null, direction_id, stop_id, function (e, data) {
         if (e) {
             global.log.error(e.message);
@@ -99,6 +100,36 @@ router.get("/shapes/:agency/direction/:direction_id/stop/:stop_id", function (re
         res.send(data || {error: "No live bus shapes for agency combination."});
     });
 });
+
+
+router.get("/shapes/:agency/route/:route_id/direction/:direction_id", function (req, res, next) {
+    var agency_key = req.params.agency,
+        route_id = req.params.route_id,
+        direction_id = parseInt(req.params.direction_id, 10);
+    console.log(agency_key, route_id, direction_id, "<-- agency_key, route_id, direction_id");
+    gtfs.getAllLiveBusShapes(agency_key, route_id, direction_id, function (e, data) {
+        if (e) {
+            global.log.error(e.message);
+            return next(e);
+        }
+        res.send(data || {error: "No live bus shapes for agency combination."});
+    });
+});
+
+router.get("/shapes/:agency/route/:route_id/direction/:direction_id", function (req, res, next) {
+    var agency_key = req.params.agency,
+        route_id = req.params.route_id,
+
+        direction_id = parseInt(req.params.direction_id);
+    gtfs.getAllLiveBusShapes(agency_key, route_id, direction_id, function (e, data) {
+        if (e) {
+            global.log.error(e.message);
+            return next(e);
+        }
+        res.send(data || {error: "No live bus shapes for agency combination."});
+    });
+});
+
 
 router.get("/shapes/:agency/route/:route_id/direction/:direction_id/stop/:stop_id", function (req, res, next) {
     var agency_key = req.params.agency,
@@ -113,6 +144,8 @@ router.get("/shapes/:agency/route/:route_id/direction/:direction_id/stop/:stop_i
         res.send(data || {error: "No live bus shapes for agency combination."});
     });
 });
+
+
 
 /* Stoplist */
 router.get("/stops/:agency/route/:route_id/direction/:direction_id", function (req, res, next) {

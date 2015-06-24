@@ -216,6 +216,14 @@ angular
     //            $scope.startLiveBusMarker();
     //        }.bind($scope), 3000);
     //    };
+
+        //    function restartLiveBusTimer() {
+        //        $timeout.cancel(live_bus_position_timer);
+        //        $scope.updateBusMarker(function () {
+        //            $scope.map.fitBounds(live_bus_bounds);
+        //        });
+        //        $scope.startLiveBusMarker();
+        //    }
     //
     //    $ionicModal.fromTemplateUrl("templates/stop-time-modal.html", {
     //        scope: $scope,
