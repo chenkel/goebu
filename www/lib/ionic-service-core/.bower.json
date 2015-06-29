@@ -24,6 +24,6 @@
     "commit": "ae809e517a6f14cd8f4dfcec00c184143fe4b89d"
   },
   "_source": "git://github.com/driftyco/ionic-service-core.git",
-  "_target": "~0.1.5",
+  "_target": ">= 0.1.0",
   "_originalSource": "ionic-service-core"
 }

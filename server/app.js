@@ -10,7 +10,7 @@ var express = require('express'),
     cookieParser = require('cookie-parser'),
     bodyParser = require('body-parser'),
     cors = require('cors'),
-    //compress = require('compression'),
+    compress = require('compression'),
     api = require('./routes/api'),
     app = express();
 

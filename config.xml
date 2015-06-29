@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<widget id="com.ionicframework.goebu736018" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="de.christopherhenkel.goebu" version="0.0.2" build="2" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
   <access origin="*"/>
-  <access origin="*"/>
-  <name>goebu</name>
+  <name>Bus Radar - Göttingen</name>
   <description>
-        An Ionic Framework and Cordova project.
+        Die Göttinger Bus App mit Live Busradar
     </description>
-  <author email="hi@ionicframework" href="http://ionicframework.com/">
-      Ionic Framework Team
+  <author email="c.henkel@online.de" href="http://goebu.de">
+      Christopher henkel
     </author>
   <content src="index.html"/>
   <preference name="webviewbounce" value="false"/>

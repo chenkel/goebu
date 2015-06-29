@@ -87,6 +87,31 @@ var gtfs = require("../lib/gtfs");
 //    });
 //});
 
+//"api/shapes/goevb/routes/" + busLinesQuery + '/start/' + startQuery + '/end/' + endQuery;
+router.get("/shapes/:agency/q", function (req, res, next) {
+    var agency_key = req.params.agency,
+        routes = req.query.routes,
+        starts = req.query.starts,
+        ends = req.query.ends;
+
+    console.log(agency_key, routes, starts, ends, "<-- agency_key, routes, start, end");
+    //res.status(200).json({status:"ok"});
+
+    gtfs.getLiveBusPositions(agency_key, routes, starts, ends, function (e, data) {
+        if (e) {
+            global.log.error(e.message);
+            return next(e);
+        }
+        res.send(data || {error: "No live bus shapes for agency combination."});
+    });
+    //gtfs.getAllLiveBusShapes(agency_key, null, direction_id, stop_id, function (e, data) {
+    //    if (e) {
+    //        global.log.error(e.message);
+    //        return next(e);
+    //    }
+    //    res.send(data || {error: "No live bus shapes for agency combination."});
+    //});
+});
 
 router.get("/shapes/:agency/direction/:direction_id/stop/:stop_id", function (req, res, next) {
     var agency_key = req.params.agency,
@@ -149,6 +174,8 @@ router.get("/shapes/:agency/route/:route_id/direction/:direction_id/stop/:stop_i
 
 /* Stoplist */
 router.get("/stops/:agency/route/:route_id/direction/:direction_id", function (req, res, next) {
+    console.log("<-- blaaa");
+
     var agency_key = req.params.agency,
         route_id = req.params.route_id,
         direction_id = parseInt(req.params.direction_id, 10);

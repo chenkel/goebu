@@ -2,15 +2,16 @@
   "name": "goebu",
   "private": "true",
   "dependencies": {
-    "moment": "~2.10.3"
+    "moment": "~2.10.3",
+    "async": "~1.2.1"
   },
   "devDependencies": {
     "ionic": "driftyco/ionic-bower",
-    "ionic-service-core": "~0.1.5",
+    "ionic-service-core": "~0.1.7",
     "ionic-service-deploy": "~0.0.6",
     "ionic-service-analytics": "master",
     "ngCordova": "~0.1.17-alpha",
-    "ionic-service-push": "~0.1.7",
+    "ionic-service-push": "~0.1.8",
     "ionic-ion-header-shrink": "*"
   }
 }

@@ -7759,6 +7759,15 @@ a.button {
 [jsdisplay*="line.agencies"] {
   display: none; }
 
+.labels {
+  color: white;
+  background-color: red;
+  font-family: "Lucida Grande", "Arial", sans-serif;
+  font-size: 10px;
+  text-align: center;
+  width: 10px;
+  white-space: nowrap; }
+
 .align-center {
   text-align: center; }
 
@@ -7827,17 +7836,13 @@ a.button {
 .line-badge.line-11, .line-badge.line-12 {
   background-color: #FF8700; }
 .line-badge.line-21, .line-badge.line-22, .line-badge.line-23 {
-  background-color: #D70000;
-  color: white; }
+  background-color: #D70000; }
 .line-badge.line-31, .line-badge.line-32 {
-  background-color: #7AF500;
-  color: #402200; }
+  background-color: #7AF500; }
 .line-badge.line-33 {
-  background-color: #53C900;
-  color: #402200; }
+  background-color: #53C900; }
 .line-badge.line-41, .line-badge.line-42 {
-  background-color: #00FFFF;
-  color: #402200; }
+  background-color: #00FFFF; }
 .line-badge.line-50 {
   background-color: #137E08; }
 .line-badge.line-61, .line-badge.line-62 {
@@ -7847,8 +7852,7 @@ a.button {
 .line-badge.line-73 {
   background-color: #0F21FF; }
 .line-badge.line-80 {
-  background-color: #FFCC00;
-  color: #402200; }
+  background-color: #FFCC00; }
 .line-badge.line-91, .line-badge.line-92 {
   background-color: #8653D9; }
 

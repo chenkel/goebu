@@ -19,8 +19,10 @@ angular.module('goebu', [
     'ionic',
     'ngCordova',
     'ionic.service.core',
+    'ionic.service.push',
     'ionic.service.deploy',
-    'goebu.controllers'
+    'goebu.controllers',
+    'goebu.services'
 ])
 
     .config(['$ionicAppProvider', function ($ionicAppProvider) {
@@ -33,33 +35,33 @@ angular.module('goebu', [
         });
     }])
 
-    .run(function ($ionicPlatform, $ionicUser, $ionicDeploy, $cordovaDialogs, $ionicLoading) {
+    .run(function ($ionicPlatform, $ionicUser, $ionicDeploy, $cordovaDialogs, $ionicLoading, $ionicPush) {
         $ionicPlatform.ready(function () {
             var user = $ionicUser.get();
             if (!user.user_id) {
                 // Set your user_id here, or generate a random one
                 user.user_id = $ionicUser.generateGUID();
-                console.log('Identifying user - new one');
+                console.log('Identifying user - new one: ', user.user_id);
             } else {
-                console.log('Identifying user - found');
+                console.log('Identifying user - found: ', user.user_id);
             }
 
-            //$ionicUser.identify(user).then(function () {
-            //    // Register with the Ionic Push service.  All parameters are optional.
-            //    //$ionicPush.register({
-            //    //    canShowAlert: true, //Can pushes show an alert on your screen?
-            //    //    canSetBadge: true, //Can pushes update app icon badges?
-            //    //    canPlaySound: true, //Can notifications play a sound?
-            //    //    canRunActionsOnWake: true, //Can run actions outside the app,
-            //    //    onNotification: function (notification) {
-            //    //        // Handle new push notifications here
-            //    //        console.log(notification);
-            //    //        return true;
-            //    //    }
-            //    //}, user);
-            //}, function (err) {
-            //    console.log(err, "<-- err");
-            //});
+            $ionicUser.identify(user).then(function () {
+                // Register with the Ionic Push service.  All parameters are optional.
+                $ionicPush.register({
+                    canShowAlert: true, //Can pushes show an alert on your screen?
+                    canSetBadge: true, //Can pushes update app icon badges?
+                    canPlaySound: true, //Can notifications play a sound?
+                    canRunActionsOnWake: true, //Can run actions outside the app,
+                    onNotification: function (notification) {
+                        // Handle new push notifications here
+                        console.log(notification);
+                        return true;
+                    }
+                }, user);
+            }, function (err) {
+                console.log(err, "<-- err");
+            });
 
             $ionicDeploy.check().then(function (response) {
                     // response will be true/false
