@@ -11,6 +11,18 @@
   z-index: 11;
 }
 
+
+
+$map-list-ratio : 0.90;
+@function mapPaddingBottom($pixels) {
+
+  @if (unitless($pixels)) {
+    $pixels: $pixels * 1px;
+  }
+
+  @return $pixels * $map-list-ratio;
+}
+
 .map-wrapper {
   //position: relative;
   //overflow: hidden;
@@ -23,20 +35,25 @@
     //height: auto;
 
     @media screen and (max-height: 480px) {
-      padding-bottom: 350px;
+      padding-bottom: mapPaddingBottom(480);
     }
     @media screen and (min-height: 480px) {
-      padding-bottom: 350px;
+      //padding-bottom: 350px;
+      padding-bottom: mapPaddingBottom(480);
     }
     @media screen and (min-height: 560px) {
-      padding-bottom: 470px;
+      //padding-bottom: 470px;
+      padding-bottom: mapPaddingBottom(560);
     }
     @media screen and (min-height: 800px) {
-      padding-bottom: 720px;
+      //padding-bottom: 720px;
+      padding-bottom: mapPaddingBottom(800);
     }
     @media screen and (min-height: 1100px) {
-      padding-bottom: 1010px;
+      //padding-bottom: 1010px;
+      padding-bottom: mapPaddingBottom(1100);
     }
+
   }
 }
 

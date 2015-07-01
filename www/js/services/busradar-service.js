@@ -1,6 +1,6 @@
 "use strict";
-var host = "http://localhost:3000/";
-//var host = "http://goebu.christopherhenkel.de:3000/";
+//var host = "http://localhost:3000/";
+var host = "http://goebu.christopherhenkel.de:3000/";
 
 angular.module("goebu.services").factory('busRadar', function ($http) {
     var busRadar = {};
@@ -27,24 +27,30 @@ angular.module("goebu.services").factory('busRadar', function ($http) {
     }
 
     function addLatLngToDistinctSequences(route) {
+        //console.log("<-- addLatLngToDistinctSequences called for Route: ", route);
         for (var x = 0, xlen = route.distinctSequences.length; x < xlen; x++) {
             var currentDistinctSequence = route.distinctSequences[x];
 
             var startResolved = false;
             var endResolved = false;
+            //console.log(stops_fixtures, "<-- stops_fixtures");
             for (var y = 0, ylen = route.stops.length; y < ylen; y++) {
                 var currentStop = route.stops[y];
                 if (currentStop.stop_id === currentDistinctSequence.end.stop_id) {
                     currentDistinctSequence.end.stop_lat = currentStop.stop_lat;
                     currentDistinctSequence.end.stop_lon = currentStop.stop_lon;
                     endResolved = true;
+                    //console.log(route.route_id, "<-- endResolved");
                 }
                 if (currentStop.stop_id === currentDistinctSequence.start.stop_id) {
                     currentDistinctSequence.start.stop_lat = currentStop.stop_lat;
                     currentDistinctSequence.start.stop_lon = currentStop.stop_lon;
                     startResolved = true;
+                    //console.log(route.route_id, "<-- startResolved");
                 }
                 if (startResolved && endResolved) {
+                    //route.distinctSequences[x] = currentDistinctSequence;
+
                     break;
                 }
             }
@@ -54,6 +60,8 @@ angular.module("goebu.services").factory('busRadar', function ($http) {
     function constructLiveSequences(goebu_params, cb) {
         var now = new Date();
         var nowInSeconds = timeToSeconds(now);
+        busRadar.routes = goebu_params.routes;
+        goebu_params.live_positions = [];
         async.each(goebu_params.routes, function (route, eachCallback) {
             if (route.stop_times && route.stop_times.length > 0) {
                 route.distinctSequences = [];
@@ -99,6 +107,7 @@ angular.module("goebu.services").factory('busRadar', function ($http) {
                                     end: route.stop_times[l]
                                 });
                                 endSequenceFound = true;
+                                //console.log(route, "<-- End sequence found");
                                 break;
                             } else if (route.stop_times[l].stop_sequence === 0) {
                                 route.distinctSequences.push({
@@ -108,22 +117,33 @@ angular.module("goebu.services").factory('busRadar', function ($http) {
                                 });
                             }
                         }
-                        if (currentDistinctSequenceStart.stop_sequence === 0 && endSequenceFound === false) {
-                            route.distinctSequences.push({
-                                start: currentDistinctSequenceStart,
-                                end: currentDistinctSequenceStart,
-                                stalled: true
-                            });
+                        if (endSequenceFound === false) {
+
+                            if (currentDistinctSequenceStart.stop_sequence === 0) {
+                                route.distinctSequences.push({
+                                    start: currentDistinctSequenceStart,
+                                    end: currentDistinctSequenceStart,
+                                    stalled: true
+                                });
+                            } else {
+                                //console.log(route, "<-- No end sequence found");
+                            }
                         }
                     }
                 }
 
-                addLatLngToDistinctSequences(route);
+                if (route.distinctSequences){
+                    addLatLngToDistinctSequences(route);
+                } else {
+                    //console.log("<-- No distinct sequences for Route: ", route);
+                }
+
 
                 if (route.distinctSequences) {
-                    goebu_params.live_positions = [];
+
                     for (var m = 0, mlen = route.distinctSequences.length; m < mlen; m++) {
                         var currentSequence = route.distinctSequences[m];
+                        //console.log(currentSequence, "<-- currentSequence");
                         var time_total = currentSequence.end.departure_time - currentSequence.start.departure_time;
                         if (time_total === 0) {
                             time_total = 0.0000001;
@@ -139,7 +159,9 @@ angular.module("goebu.services").factory('busRadar', function ($http) {
                         currentSequence.route = route;
                         goebu_params.live_positions.push(currentSequence);
 
+
                     }
+                    //console.log(goebu_params.live_positions, "<-- goebu_params.live_positions");
                 }
 
             }
@@ -151,6 +173,7 @@ angular.module("goebu.services").factory('busRadar', function ($http) {
                 cb(err, null);
             } else {
                 busRadar.livePositions = goebu_params.live_positions;
+
                 cb(null, goebu_params);
             }
         });
@@ -185,6 +208,7 @@ angular.module("goebu.services").factory('busRadar', function ($http) {
                         busRadar.nextUpdate = moment(result.expiryTime);
                         console.log(busRadar.nextUpdate.format(), "<-- next API Call");
                         previousResult = result;
+                        //console.log(result, "<-- result");
                         constructLiveSequences(result, callbackConstructLiveSequences);
                     }
                     previousBusLineQuery = busLinesQuery;
@@ -196,7 +220,7 @@ angular.module("goebu.services").factory('busRadar', function ($http) {
                 previousResult.routes[0] &&
                 previousResult.routes[0].stop_times &&
                 previousResult.routes[0].stop_times.length > 0) {
-                console.log("Offline Calculation");
+                //console.log("Offline Calculation");
                 constructLiveSequences(previousResult, callbackConstructLiveSequences);
             }
         }

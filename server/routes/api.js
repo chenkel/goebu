@@ -113,6 +113,17 @@ router.get("/shapes/:agency/q", function (req, res, next) {
     //});
 });
 
+router.get("/shapes/:agency/line/all", function (req, res, next) {
+    var agency_key = req.params.agency;
+    gtfs.getAllBusLineShapes(agency_key, function (e, data) {
+        if (e) {
+            global.log.error(e.message);
+            return next(e);
+        }
+        res.send(data || {error: "No bus line shapes for agency combination."});
+    });
+});
+
 router.get("/shapes/:agency/direction/:direction_id/stop/:stop_id", function (req, res, next) {
     var agency_key = req.params.agency,
         stop_id = req.params.stop_id,

@@ -45,7 +45,7 @@ require("../models/Trip");
 var Stop = db.model("Stop"),
 
 //Agency = db.model("Agency"),
-//Route = db.model("Route"),
+    Route = db.model("Route"),
 
     StopTime = db.model("StopTime"),
     Trip = db.model("Trip"),
@@ -256,7 +256,7 @@ function findTripsWithServiceRouteDirection(goebu_params, cb) {
 function findStopTimesForStopWithTripsTimeHorizon(goebu_params, cb) {
     var timeInSeconds = utils.timeToSeconds(new Date()),
         stopTimeQuery = {},
-        seconds_before = 0,
+        seconds_before = 864000,
         seconds_after = 864000;
 
     if (typeof timeCheat !== 'undefined' && timeCheat !== null) {
@@ -284,17 +284,20 @@ function findStopTimesForStopWithTripsTimeHorizon(goebu_params, cb) {
     }
 
     var query = StopTime.find(stopTimeQuery)
-        .select("stop_id departure_time stop_sequence -_id")
-        .where("departure_time").gte(timeInSeconds - seconds_before)
-        .where("departure_time").lte(timeInSeconds + seconds_after)
+        .select("stop_id stop_sequence -_id")
+        //.where("departure_time").gte(timeInSeconds - seconds_before)
+        //.where("departure_time").lte(timeInSeconds + seconds_after)
         .sort("departure_time") //asc has been removed in favor of sort as of mongoose 3.x
         .limit(1000);
 
-    query = query.where({
-        trip_id: {
-            $in: goebu_params.trip_ids
-        }
-    })
+    if (goebu_params.trip_ids) {
+
+        query = query.where({
+            trip_id: {
+                $in: goebu_params.trip_ids
+            }
+        })
+    }
 
     query.exec(function (e, stopTimes) {
         if (e) {
@@ -962,6 +965,39 @@ module.exports = {
         //cb();
     },
 
+    getAllBusLineShapes: function (agency_key, cb) {
+
+        var goebu_params = {
+            agency_key: String(agency_key),
+        }
+
+        async.waterfall([
+                async.apply(getRoutesByAgency, goebu_params),
+                getServicesByAgency,
+                getStopsByAgency,
+                //findStopTimesForStopWithTripsTimeHorizon,
+                attachTripsWithServiceIdsToRoutes,
+                attachStopTimesWithServiceIdsAndTripsToRoutes,
+                cleanUpResultForBusLines,
+                function (goebu_params, cb) {
+                    //console.log(goebu_params, "<-- go");
+                    cb(null, goebu_params);
+                },
+                //attachArrivalStopSequenceToRouteWithTripsAndDirectionId,
+                //findStopTimesWithTripsAndTimeHorizon,
+                //attachStopsFromStopIdsForRoutes,
+                //
+
+                //attachTripsWithServiceIdsToRoutes,
+                //findOutDirectionIdForRoutes,
+                //attachArrivalStopSequenceToRouteWithTripsAndDirectionId,
+                //findStopTimesWithTripsAndTimeHorizon,
+                //attachStopsFromStopIdsForRoutes,
+                ////cleanUpResultForUser
+            ],
+            utils.returnResults(cb));
+    },
+
     getLiveBusPositions: function (agency_key, routesInString, startInString, endInString, cb) {
         var routeIds = routesInString.split(',');
         routeIds.pop();
@@ -999,7 +1035,7 @@ module.exports = {
                 attachArrivalStopSequenceToRouteWithTripsAndDirectionId,
                 findStopTimesWithTripsAndTimeHorizon,
                 attachStopsFromStopIdsForRoutes,
-                //cleanUpResultForUser
+                cleanUpResultForUser
             ],
             utils.returnResults(cb));
     }
@@ -1010,10 +1046,14 @@ function findStopsWithStopDescInRoutes(goebu_params, cb) {
     async.each(goebu_params.routes, function (route, callback) {
 
             function getStopIdsWithStopName(arrivalOrDeparture, parallelCallback) {
-                // Bahnhof/ZOB fix
 
                 if (route[arrivalOrDeparture].stop_name === 'Bahnhof/ZOB') {
+                    // Bahnhof/ZOB fix
                     route[arrivalOrDeparture].stop_ids = ['9101', '9104'];
+                    parallelCallback(null, route[arrivalOrDeparture].stop_ids);
+                } else if (route[arrivalOrDeparture].stop_name === 'Hiroshimaplatz/Neues Rathaus'){
+                    // Hiroshimaplatz/Neues Rathaus fix
+                    route[arrivalOrDeparture].stop_ids = ['6171', '6172', '6012'];
                     parallelCallback(null, route[arrivalOrDeparture].stop_ids);
                 } else {
                     Stop.aggregate({
@@ -1062,7 +1102,7 @@ function findStopsWithStopDescInRoutes(goebu_params, cb) {
                 global.log.error("Error at findStopsWithStopDescInRoutes - async.each", err);
                 cb(err, null);
             } else {
-                global.log.debug("All routes have been succesfully processed.");
+                global.log.trace("All routes have been succesfully processed.");
                 //global.log.debug("goebu_params", JSON.stringify(goebu_params));
                 cb(null, goebu_params)
             }
@@ -1107,11 +1147,14 @@ function attachTripsWithServiceIdsToRoutes(goebu_params, cb) {
                     if (err) {
                         return parallelCallback(e, null);
                     } else {
-                        var route_ids = [];
+                        var trip_ids = [];
                         for (var i = 0, len = trips.length; i < len; i++) {
-                            route_ids.push(trips[i].trip_id);
+                            trip_ids.push(trips[i].trip_id);
                         }
-                        parallelCallback(null, route_ids)
+                        if (trip_ids.length < 1) {
+                            global.log.error("attachTripsWithServiceIdsToRoutes - No trips found for Route: " + route.route_id);
+                        }
+                        parallelCallback(null, trip_ids)
                     }
                 })
             }
@@ -1134,7 +1177,7 @@ function attachTripsWithServiceIdsToRoutes(goebu_params, cb) {
                 global.log.error("Error at attachTripsWithServiceIdsToRoutes - async.each", err);
                 cb(err, null);
             } else {
-                global.log.debug("All trips have been succesfully processed.");
+                global.log.trace("All trips have been succesfully processed.");
                 //global.log.debug("goebu_params", JSON.stringify(goebu_params));
                 cb(null, goebu_params)
             }
@@ -1239,15 +1282,26 @@ function findOutDirectionIdForRoutes(goebu_params, cb) {
                     eachCallback(err);
                 } else {
                     //global.log.debug("results", results);
-                    if (results.zero_direction && results.zero_direction.departure && results.zero_direction.arrival) {
-                        if (results.zero_direction.departure.stop_sequence < results.zero_direction.arrival.stop_sequence) {
-                            route.direction_id = 0;
-                        }
-                    } else if (results.one_direction && results.one_direction.departure && results.one_direction.arrival) {
-                        if (results.one_direction.departure.stop_sequence < results.one_direction.arrival.stop_sequence) {
-                            route.direction_id = 1;
-                        }
+                    route.direction_id = null;
+
+                    if (results.zero_direction &&
+                        results.zero_direction.departure &&
+                        results.zero_direction.arrival &&
+                        results.zero_direction.departure.stop_sequence < results.zero_direction.arrival.stop_sequence) {
+                        route.direction_id = 0;
                     }
+                    if (results.one_direction &&
+                        results.one_direction.departure &&
+                        results.one_direction.arrival &&
+                        results.one_direction.departure.stop_sequence < results.one_direction.arrival.stop_sequence) {
+                        route.direction_id = 1;
+                    }
+
+                    if (route.direction_id === null) {
+                        global.log.error("something is wrong here - results.zero_direction: ", results.zero_direction);
+                        global.log.error("something is wrong here - results.one_direction: ", results.one_direction);
+                    }
+
                     eachCallback();
                 }
             })
@@ -1257,7 +1311,7 @@ function findOutDirectionIdForRoutes(goebu_params, cb) {
                 global.log.error("Error at findOutDirectionIdForRoutes - async.each", err);
                 cb(err, null);
             } else {
-                global.log.debug("Direction ID has been succesfully processed.");
+                global.log.trace("Direction ID has been succesfully processed.");
                 //global.log.debug("goebu_params", JSON.stringify(goebu_params));
                 cb(null, goebu_params)
             }
@@ -1273,7 +1327,7 @@ function attachArrivalStopSequenceToRouteWithTripsAndDirectionId(goebu_params, c
             // find with departure stop_ids und trip_ids die Stop sequence (b)
             //    falls a < b direction id gefunden. abbrechen!!
 
-            if (route.direction_id) {
+            if (route.direction_id !== null) {
 
                 var directionsTripIds = [];
                 directionsTripIds.push(
@@ -1333,7 +1387,7 @@ function attachArrivalStopSequenceToRouteWithTripsAndDirectionId(goebu_params, c
                             global.log.error("Error at AttachArrivalStopSequenceToRoute - async.parallel", err);
                             eachCallback(err);
                         } else {
-                            console.log(results, "<-- results");
+                            //console.log(results, "<-- results");
                             route.stop_sequences = results;
                             eachCallback();
 
@@ -1379,7 +1433,7 @@ function attachArrivalStopSequenceToRouteWithTripsAndDirectionId(goebu_params, c
 function findStopTimesWithTripsAndTimeHorizon(goebu_params, cb) {
     var timeInSeconds = utils.timeToSeconds(new Date()),
         stopTimeQuery = {},
-        seconds_before = 3600,
+        seconds_before = 1800,
         seconds_after = 3600;
 
     if (typeof timeCheat !== 'undefined' && timeCheat !== null) {
@@ -1391,7 +1445,7 @@ function findStopTimesWithTripsAndTimeHorizon(goebu_params, cb) {
     stopTimeQuery.agency_key = goebu_params.agency_key;
 
     async.each(goebu_params.routes, function (route, eachCallback) {
-        if (route.direction_id) {
+        if (route.direction_id !== null) {
 
 
             //global.log.debug("route", route);
@@ -1410,11 +1464,13 @@ function findStopTimesWithTripsAndTimeHorizon(goebu_params, cb) {
             })
 
             if (route && route.stop_sequences && route.stop_sequences.arrival && route.stop_sequences.arrival.stop_sequence !== null) {
-                query = query.where("stop_sequence").lte(route.stop_sequences.arrival.stop_sequence + 1)
+                query = query.where("stop_sequence").lte(route.stop_sequences.departure.stop_sequence + 4);
+                global.log.info("route.stop_sequences.arrival.stop_sequence", route.stop_sequences.arrival.stop_sequence);
             }
 
             if (route && route.stop_sequences && route.stop_sequences.departure && route.stop_sequences.departure.stop_sequence !== null) {
-                query = query.where("stop_sequence").gte(route.stop_sequences.departure.stop_sequence - 20)
+                query = query.where("stop_sequence").gte(route.stop_sequences.departure.stop_sequence - 20);
+                global.log.info("route.stop_sequences.departure.stop_sequence", route.stop_sequences.departure.stop_sequence);
             }
 
             query.exec(function (e, stopTimes) {
@@ -1422,16 +1478,22 @@ function findStopTimesWithTripsAndTimeHorizon(goebu_params, cb) {
                     global.log.error(e.message);
                     return cb(e, null);
                 } else {
-                    route.stop_times = stopTimes;
-                    route.stop_ids = [];
-                    for (var i = 0, len = stopTimes.length; i < len; i++) {
-                        var stopTime = stopTimes[i];
-                        route.stop_ids.push(stopTime.stop_id);
+                    if (stopTimes.length > 0) {
+                        route.stop_times = stopTimes;
+                        route.stop_ids = [];
+                        for (var i = 0, len = stopTimes.length; i < len; i++) {
+                            var stopTime = stopTimes[i];
+                            route.stop_ids.push(stopTime.stop_id);
+                        }
+                    } else {
+                        global.log.error("No stop times found for Route:" + route.route_id);
                     }
+
                     eachCallback();
                 }
             })
         } else {
+            global.log.error("findStopTimesWithTripsAndTimeHorizon - Direction ID is missing ");
             eachCallback();
         }
     }, function callbackAsyncEachAttachStopTimes(err) {
@@ -1439,7 +1501,7 @@ function findStopTimesWithTripsAndTimeHorizon(goebu_params, cb) {
             global.log.error("Error at findStopTimesWithTripsAndTimeHorizon - async.each", err);
             cb(err, null);
         } else {
-            global.log.debug("All stop times have been succesfully added.");
+            global.log.trace("All stop times have been succesfully added.");
             //global.log.debug("goebu_params", JSON.stringify(goebu_params));
             cb(null, goebu_params)
         }
@@ -1474,7 +1536,7 @@ function attachStopsFromStopIdsForRoutes(goebu_params, cb) {
             global.log.error("Error at attachStopsFromStopIdsForRoutes - async.each", err);
             cb(err, null);
         } else {
-            global.log.debug("All stop have been succesfully added.");
+            global.log.trace("All stop have been succesfully added.");
             //global.log.debug("goebu_params", JSON.stringify(goebu_params));
             cb(null, goebu_params)
         }
@@ -1484,8 +1546,8 @@ function attachStopsFromStopIdsForRoutes(goebu_params, cb) {
 
 function cleanUpResultForUser(goebu_params, cb) {
     async.each(goebu_params.routes, function (route, eachCallback) {
-        delete route.stop_arrival;
-        delete route.stop_departure;
+        //delete route.stop_arrival;
+        //delete route.stop_departure;
         delete route.trips;
         delete route.direction_id_proof;
         delete route.stop_ids;
@@ -1495,7 +1557,232 @@ function cleanUpResultForUser(goebu_params, cb) {
             global.log.error("Error at cleanUpResultForUser - async.each", err);
             cb(err, null);
         } else {
-            global.log.debug("Result has been cleaned up for user return ");
+            global.log.trace("Result has been cleaned up for user return ");
+            //global.log.debug("goebu_params", JSON.stringify(goebu_params));
+            cb(null, goebu_params)
+        }
+    })
+
+}
+
+///**
+//* getServicesByAgency gets routes for one agency
+//* @param agency_key
+//* @param cb
+//*/
+function getServicesByAgency(goebu_params, cb) {
+    var agency_key = goebu_params.agency_key;
+
+    Calendar.aggregate({
+        $match: {
+            agency_key: goebu_params.agency_key
+        }
+    }, {
+        $project: {
+            _id: 0,
+            service_id: 1
+        }
+    }, {
+        $sort: {"service_id": 1}
+    }, function onServiceFoundAggregate(err, foundService) {
+        if (err) {
+            return cb(e, null);
+        } else {
+            var service_ids = [];
+            for (var i = 0, len = foundService.length; i < len; i++) {
+                service_ids.push(foundService[i].service_id);
+            }
+            goebu_params.service_ids = service_ids;
+            cb(null, goebu_params);
+        }
+    })
+}
+
+///**
+//* getRoutesByAgency gets routes for one agency
+//* @param agency_key
+//* @param cb
+//*/
+function getRoutesByAgency(goebu_params, cb) {
+    var agency_key = goebu_params.agency_key;
+    Route.aggregate({
+        $match: {
+            agency_key: goebu_params.agency_key
+        }
+    }, {
+        $project: {
+            _id: 0,
+            route_id: 1
+        }
+    }, {
+        $sort: {"route_id": 1}
+    }, function onRouteFoundAggregate(err, foundRoutes) {
+        if (err) {
+            return cb(e, null);
+        } else {
+            var routes = [];
+            var route_ids = [];
+            for (var i = 0, len = foundRoutes.length; i < len; i++) {
+                routes.push({
+                    route_id: foundRoutes[i].route_id
+                });
+                route_ids.push(foundRoutes[i].route_id);
+            }
+            goebu_params.routes = routes;
+            console.log(route_ids, "<-- route_ids");
+            cb(null, goebu_params);
+        }
+    })
+}
+
+///**
+//* getRoutesByAgency gets routes for one agency
+//* @param agency_key
+//* @param cb
+//*/
+function getStopsByAgency(goebu_params, cb) {
+    var agency_key = goebu_params.agency_key;
+    Stop.aggregate({
+        $match: {
+            agency_key: goebu_params.agency_key
+        }
+    }, {
+        $project: {
+            _id: 0,
+            stop_id: 1,
+            stop_lat: 1,
+            stop_lon: 1,
+        }
+    }, function onStopFoundAggregate(err, foundStops) {
+        if (err) {
+            return cb(e, null);
+        } else {
+            goebu_params.stops = foundStops;
+            cb(null, goebu_params);
+        }
+    })
+}
+
+function attachStopTimesWithServiceIdsAndTripsToRoutes(goebu_params, cb) {
+    async.each(goebu_params.routes, function (route, eachCallback) {
+
+            function getStopTimeWithDirectionId(direction_id, parallelCallback) {
+                //console.log(route.trips[direction_id], "<-- route.trips[direction_id]");
+                StopTime.aggregate({
+                        $match: {
+                            agency_key: goebu_params.agency_key,
+                            trip_id: {
+                                $in: route.trips[direction_id]
+                            }
+                        }
+                    }
+                    , {
+                        $project: {
+                            stop_id: 1,
+                            stop_sequence: 1,
+                            trip_id: 1
+                        }
+                    }
+                    , {
+                        $group: {
+                            _id: {trip_id: "$trip_id"},
+                            stop_ids: {$push: "$stop_id"},
+                            stop_sequences: {$push: "$stop_sequence"},
+                            count: {$sum: 1}
+                        }
+                    }, {
+                        $sort: {count: -1}
+                    }, function onStopTimeFoundAggregate(err, stopTimesWithDirection) {
+                        if (err) {
+                            return parallelCallback(err, null);
+                        } else {
+                            if (stopTimesWithDirection.length < 1) {
+                                global.log.error("onStopTimeFoundAggregate - No stop times found route: " + route.route_id);
+                            }
+
+                            stopTimesWithDirection = stopTimesWithDirection[0];
+                            if (stopTimesWithDirection.count && stopTimesWithDirection.count > 0) {
+                                if (!route.stop_sequences) {
+                                    route.stop_sequences = {}
+                                }
+
+                                route.stop_sequences[direction_id] = new Array(stopTimesWithDirection.count);
+
+                                if (!goebu_params[route.route_id]) {
+                                    goebu_params[route.route_id] = {};
+                                }
+                                if (!goebu_params[route.route_id][direction_id]) {
+                                    goebu_params[route.route_id][direction_id] = [];
+                                }
+
+                                for (var i = 0, len = stopTimesWithDirection.stop_ids.length; i < len; i++) {
+                                    var current_stoptime_stop_id = stopTimesWithDirection.stop_ids[i];
+                                    for (var y = 0, ylen = goebu_params.stops.length; y < ylen; y++) {
+                                        var currentStop = goebu_params.stops[y];
+                                        if (currentStop.stop_id === current_stoptime_stop_id) {
+                                            goebu_params[route.route_id][direction_id].push(currentStop.stop_lat);
+                                            goebu_params[route.route_id][direction_id].push(currentStop.stop_lon);
+
+                                            route.stop_sequences[direction_id][stopTimesWithDirection.stop_sequences[i]] = {
+                                                lat: currentStop.stop_lat,
+                                                lon: currentStop.stop_lon
+                                            };
+                                            break;
+                                        }
+                                    }
+
+                                }
+                            }
+
+                            parallelCallback(null, stopTimesWithDirection)
+                        }
+                    })
+            }
+
+            async.parallel({
+                0: getStopTimeWithDirectionId.bind(null, 0),
+                1: getStopTimeWithDirectionId.bind(null, 1)
+            }, function callbackAsyncParallelAttachStopTimes(err, results) {
+                if (err) {
+                    global.log.error("Error at AttachStopTimes - async.parallel", err);
+                    eachCallback(err);
+                } else {
+                    route.stop_times = results;
+                    //global.log.debug("results", results);
+                    eachCallback();
+                }
+            })
+        }, function callbackAsyncEachAttachTrips(err) {
+            if (err) {
+                global.log.error("Error at attachStopTimesWithServiceIdsAndTripsToRoutes - async.each", err);
+                cb(err, null);
+            } else {
+                global.log.trace("All trips have been succesfully processed.");
+                //global.log.debug("goebu_params", JSON.stringify(goebu_params));
+                cb(null, goebu_params)
+            }
+        }
+    )
+};
+
+function cleanUpResultForBusLines(goebu_params, cb) {
+    delete goebu_params.service_ids;
+    delete goebu_params.agency_key;
+    //delete goebu_params.stops;
+    async.each(goebu_params.routes, function (route, eachCallback) {
+        delete route.trips;
+        delete route.stop_times;
+        //delete route.stop_arrival;
+        //delete route.stop_departure;
+        //delete route.direction_id_proof;
+        //delete route.stop_ids;
+        eachCallback();
+    }, function callbackAsyncEachAttachStopTimes(err) {
+        if (err) {
+            global.log.error("Error at cleanUpResultForUser - async.each", err);
+            cb(err, null);
+        } else {
+            global.log.trace("Result has been cleaned up for user return ");
             //global.log.debug("goebu_params", JSON.stringify(goebu_params));
             cb(null, goebu_params)
         }

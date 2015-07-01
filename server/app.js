@@ -16,7 +16,7 @@ var express = require('express'),
 
 app.use(cors());
 // TODO: turn on in production
-//app.use(compress());
+app.use(compress());
 
 app.use(logger('[:date[clf]]>  :url  <[:status|:method|:http-version] :res[content-length]B :response-time ms'));
 app.use(bodyParser.json());

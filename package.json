@@ -34,8 +34,7 @@
     },
     "cordova-plugin-dialogs",
     "cordova-plugin-statusbar",
-    "cordova-plugin-whitelist@1.0.0",
-    "cordova-plugin-console"
+    "cordova-plugin-whitelist@1.0.0"
   ],
   "cordovaPlatforms": [
     "android",

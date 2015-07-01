@@ -1,26 +1,56 @@
-.header-item{
+.header-item {
   color: #008800 !important;
 }
 
-
-
-.bar.bar-light.bar-light-blue{
+.bar.bar-light.bar-light-blue {
   background-color: rgba(106, 171, 241, 0.4);
 
 }
 
+//.list.card {
+//  background-color: rgba(225, 225, 225, 0.3);
+//}
+
+//.list {
+//  background-color: rgba(225, 225, 225, 0.3);
+//}
+
+//.list.card {
+//  background-color: rgba(225, 225, 225, 0.3);
+//}
+
 .pane,
-
-.list,
-.list.card, #directions-panel > .adp-list,
-.list.card, #directions-panel > .adp{
-  background-color: rgba(225, 225, 225, 0.9);
+{
+  background-color: rgba(225, 225, 225, 0.3);
 }
 
-.card {
-  background-color: rgba(225, 225, 225, 0.1);
+//.card {
+//  background-color: rgba(225, 225, 225, 1.0);
+//}
+
+.adp-placemark {
+  background-color: rgba(106, 171, 241, 0.2)
 }
 
+.adp-listsel {
+  background-color: rgba(106, 171, 241, 0.4)
+}
+
+.list {
+  box-shadow: 0 -10px 80px rgba(225, 225, 225, 0.3);
+  border-radius: 10px;
+
+  //box-shadow: inset 0 0 1em #111;
+  //margin: 10px 10px;
+}
+
+//#directions-panel > .adp-list {
+//  background-color: rgba(225, 225, 225, 0.1);
+//}
+
+//#directions-panel > .adp {
+//  background-color: rgba(225, 225, 225, 0.1);
+//}
 
 #directions-panel > .adp-list {
   padding-left: 15px;
@@ -44,7 +74,6 @@
   //display: none;
 }
 
-
 .adp-list {
   border: none;
 }
@@ -58,13 +87,6 @@
   font-weight: 500;
 }
 
-.adp-placemark {
-  background-color: rgba(106, 171, 241, 0.2)
-}
-
-.adp-listsel {
-  background-color: rgba(106, 171, 241, 0.4)
-}
 
 
 .adp-list div:nth-child(2) ol {
@@ -79,13 +101,7 @@
   }
 }
 
-.list {
-  box-shadow: 0 -25px 75px rgba(0, 0, 0, .3);
-  border-radius: 10px;
 
-  //box-shadow: inset 0 0 1em #111;
-  //margin: 10px 10px;
-}
 
 .card {
   margin: 8px 7px;

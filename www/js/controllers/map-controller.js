@@ -5,6 +5,8 @@ var originMarker, destinationMarker, userLocationMarker;
 var departureOrArrivalTime, isDeparture;
 var live_bus_position_timer, live_bus_bounds;
 var liveBusPositions = [];
+var routePaths = [];
+var clickMapEventHandler;
 
 angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ionicLoading, $ionicSlideBoxDelegate, $cordovaGeolocation, $ionicNavBarDelegate, $ionicPlatform, $cordovaDatePicker, $cordovaDialogs, $http, $timeout, busRadar) {
 
@@ -200,6 +202,8 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
                 template: 'Karte wird initialisiert...'
             });
             initializeMap();
+            //console.log(JSON.stringify(stops_fixtures), "<-- stops_fixtures");
+
         });
 
         function fixInfoWindow() {
@@ -234,7 +238,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
 
             var mapOptions = {
                 center: myLatlng,
-                zoom: 12,
+                zoom: 13,
                 mapTypeId: google.maps.MapTypeId.ROADMAP,
                 disableDefaultUI: true
             };
@@ -258,8 +262,15 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
                 computeTotalDistance(directionsDisplay.getDirections());
             });
 
-            google.maps.event.addListener(map, 'click', function (event) {
+            var clickMapEventHandler = google.maps.event.addListener(map, 'click', function (event) {
                 placeMarker(event.latLng.lat(), event.latLng.lng());
+                google.maps.event.removeListener(clickMapEventHandler);
+
+            });
+
+            //new LongClick(map, 300);
+            google.maps.event.addListener(map, 'dblclick', function (event) {
+                console.log("<-- working dude");
             });
 
             google.maps.event.addListener(directionsDisplay, 'directions_changed', function () {
@@ -289,8 +300,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
                     position: new google.maps.LatLng(lat, lng),
                     map: map,
                     draggable: true,
-                    optimized: false,
-                    zIndex: -1,
+                    zIndex: 100,
                     icon: 'img/destination.png'
                 });
                 // setup drag event for destination marker
@@ -454,6 +464,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
                     position: new google.maps.LatLng(lat, lng),
                     map: map,
                     draggable: true,
+                    zIndex: 100,
                     icon: 'img/origin.png'
                 });
                 google.maps.event.addListener(originMarker, 'dragend', function () {
@@ -497,6 +508,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
             //    routeIndexChanged = true;
             //}
             //previousRouteIndex = routeIndex;
+            routePaths = clear_markers(routePaths);
             if ($scope.routeCalculated) {
                 findBusLines(directionsDisplay);
             }
@@ -558,15 +570,39 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
         //var liveBusPositions = [];
         var touched_live_bus_bounds = false;
         $scope.updateBusMarker = function (cb) {
-            if (cb) {
-                live_bus_bounds = new google.maps.LatLngBounds();
-                live_bus_bounds.extend(destinationMarker.getPosition());
-                live_bus_bounds.extend(originMarker.getPosition());
-                touched_live_bus_bounds = false;
-            }
             busRadar.getLivePositionsForBusLines(currentBusLines, function () {
-
                     if (busRadar.livePositions && busRadar.livePositions.length > 0) {
+                        if (cb) {
+                            live_bus_bounds = new google.maps.LatLngBounds();
+                            live_bus_bounds.extend(destinationMarker.getPosition());
+                            live_bus_bounds.extend(originMarker.getPosition());
+                            touched_live_bus_bounds = false;
+                            for (var i = 0, len = busRadar.routes.length; i < len; i++) {
+                                var currentBusRoute = busRadar.routes[i];
+                                var polylinePoints = [];
+                                if (stops_fixtures &&
+                                    stops_fixtures.sequences &&
+                                    stops_fixtures.sequences[currentBusRoute.route_id] &&
+                                    stops_fixtures.sequences[currentBusRoute.route_id][currentBusRoute.direction_id]) {
+                                    for (var k = 0; k < stops_fixtures.sequences[currentBusRoute.route_id][currentBusRoute.direction_id].length; k += 2) {
+                                        var currentCoordPair = stops_fixtures.sequences[currentBusRoute.route_id][currentBusRoute.direction_id];
+                                        polylinePoints.push(new google.maps.LatLng(currentCoordPair[k], currentCoordPair[k + 1]));
+                                    }
+                                    var routePath = new google.maps.Polyline({
+                                        path: polylinePoints,
+                                        strokeColor: stops_fixtures.sequences[currentBusRoute.route_id].color,
+                                        strokeOpacity: 0.6,
+                                        strokeWeight: 2
+                                    });
+                                    routePath.setMap(map);
+                                    routePaths.push(routePath);
+                                } else {
+                                    console.log("No bus line shapes found for Route: " + currentBusRoute.route_id);
+                                    console.log("Route Object" + currentBusRoute);
+                                }
+                            }
+                        }
+
                         var nData = busRadar.livePositions.length;
                         var nPreviousData = liveBusPositions.length;
 
@@ -607,8 +643,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
                         if (cb && touched_live_bus_bounds) {
                             cb();
                         }
-                    }
-                    else {
+                    } else {
                         liveBusPositions = clear_markers(liveBusPositions);
                         console.log("No live bus information available");
                     }
