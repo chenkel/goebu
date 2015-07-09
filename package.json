@@ -34,7 +34,27 @@
     },
     "cordova-plugin-dialogs",
     "cordova-plugin-statusbar",
-    "cordova-plugin-whitelist@1.0.0"
+    "cordova-plugin-whitelist",
+    "cordova-plugin-console",
+    "cordova-plugin-splashscreen",
+    {
+      "locator": "https://github.com/danwilson/google-analytics-plugin.git",
+      "id": "cordova-plugin-google-analytics"
+    },
+    "cordova-plugin-googleplayservices",
+    {
+      "locator": "https://github.com/driftyco/ionic-plugins-deploy",
+      "id": "com.ionic.deploy"
+    },
+    "cordova-plugin-network-information",
+    {
+      "locator": "https://github.com/EddyVerbruggen/cordova-plugin-actionsheet.git",
+      "id": "nl.x-services.plugins.actionsheet"
+    },
+    {
+      "locator": "https://github.com/EddyVerbruggen/Toast-PhoneGap-Plugin.git",
+      "id": "nl.x-services.plugins.toast"
+    }
   ],
   "cordovaPlatforms": [
     "android",

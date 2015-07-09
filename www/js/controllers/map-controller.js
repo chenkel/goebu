@@ -90,6 +90,11 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
         $scope.calcRoute = function () {
             if (originMarker && destinationMarker) {
                 console.log("calculating new route");
+                if (typeof analytics !== 'undefined') {
+                    console.log("<-- tracking Event calcRoute");
+                    analytics.trackEvent('Route', 'New Calculation');
+                }
+
 
                 $ionicLoading.show({
                     template: 'Route wird berechnet...'
@@ -109,19 +114,20 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
                 }
                 directionsService.route(request, function (response, status) {
                     if (status === google.maps.DirectionsStatus.OK) {
+                        originMarker.setVisible(true);
 
                         directionsDisplay.setDirections(response);
-                        console.log(response, "directionsService.route <-- response");
+                        //console.log(response, "directionsService.route <-- response");
                         $scope.routeCalculated = true;
-                        var titleText = 'Route';
-                        if (response.hasOwnProperty('routes')) {
-                            var nRoutes = response.routes.length;
-                            if (nRoutes > 1) {
-                                titleText = nRoutes + ' ' + titleText + 'n';
-                            } else if (nRoutes === 1) {
-                                titleText = nRoutes + ' ' + titleText;
-                            }
-                        }
+                        //var titleText = 'Route';
+                        //if (response.hasOwnProperty('routes')) {
+                        //    var nRoutes = response.routes.length;
+                        //    if (nRoutes > 1) {
+                        //        titleText = nRoutes + ' ' + titleText + 'n';
+                        //    } else if (nRoutes === 1) {
+                        //        titleText = nRoutes + ' ' + titleText;
+                        //    }
+                        //}
                         if (mapCanvasDiv && mapWrapperDiv && scrollDiv) {
                             angular.element(mapCanvasDiv).addClass('second-stage');
                             angular.element(mapWrapperDiv).addClass('second-stage');
@@ -129,7 +135,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
                             google.maps.event.trigger(map, 'resize');
 
                         }
-                        titleText = titleText + ' gefunden';
+                        var titleText = 'Ziel und Start sind verschiebbar';
                         $ionicNavBarDelegate.title(titleText);
                         findBusLines(response);
                     }
@@ -198,9 +204,9 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
         }
 
         ionic.Platform.ready(function () {
-            $ionicLoading.show({
-                template: 'Karte wird initialisiert...'
-            });
+            //$ionicLoading.show({
+            //    template: 'Karte wird initialisiert...'
+            //});
             initializeMap();
             //console.log(JSON.stringify(stops_fixtures), "<-- stops_fixtures");
 
@@ -291,17 +297,26 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
             $ionicLoading.hide();
             //$scope.userHint = "Wo möchten Sie hin?";
             $ionicNavBarDelegate.align('left');
-            $ionicNavBarDelegate.title("Wo möchten Sie hin?");
+            $ionicNavBarDelegate.title("Tippen Sie bitte zu Ihrem Zielstandort");
         }
 
         function placeMarker(lat, lng) {
             if (!destinationMarker) {
+                var myDestinationMarkerIcon = {
+                    url: 'img/destination.png',
+                    size: new google.maps.Size(44, 80), // the orignal size
+                    origin: new google.maps.Point(0, 0),
+                    anchor: new google.maps.Point(11, 40),
+                    scaledSize: new google.maps.Size(22, 40) // the new size you want to use
+                };
+
+
                 destinationMarker = new google.maps.Marker({
                     position: new google.maps.LatLng(lat, lng),
                     map: map,
                     draggable: true,
                     zIndex: 100,
-                    icon: 'img/destination.png'
+                    icon: myDestinationMarkerIcon
                 });
                 // setup drag event for destination marker
                 google.maps.event.addListener(destinationMarker, 'dragend', function () {
@@ -336,18 +351,18 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
                 $scope.map.setCenter(new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
                 $scope.loading.hide();
             }, function (error) {
-                alert('Unable to get location: ' + error.message);
-                //    TODO: set standard marker
+                console.log('Unable to get location: ' + error.message);
+                setUserLocationMarker(0, 0);
             });
         };
 
         //Aktuelle Position
 
-        var posOptions = {timeout: 10000, enableHighAccuracy: false};
+        var posOptions = {timeout: 10000, enableHighAccuracy: true};
         var watchOptions = {
             frequency: 1000,
             timeout: 3000,
-            enableHighAccuracy: false // may cause errors if true
+            enableHighAccuracy: true // may cause errors if true
         };
 
         function getCurrentLocationStart() {
@@ -360,7 +375,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
                     setUserLocationMarker(lat, long);
                 }, function (error) {
                     console.error('Error w/ getCurrentPosition: ' + JSON.stringify(error));
-
+                    setUserLocationMarker(0, 0);
                 });
 
             if (!$scope.watchPositionID) {
@@ -460,12 +475,20 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
 
             }
             if (!originMarker) {
+                var myOriginMarkerIcon = {
+                    url: 'img/origin.png',
+                    size: new google.maps.Size(44, 80), // the orignal size
+                    origin: new google.maps.Point(0, 0),
+                    anchor: new google.maps.Point(11, 40),
+                    scaledSize: new google.maps.Size(22, 40) // the new size you want to use
+                };
                 originMarker = new google.maps.Marker({
                     position: new google.maps.LatLng(lat, lng),
                     map: map,
                     draggable: true,
                     zIndex: 100,
-                    icon: 'img/origin.png'
+                    icon: myOriginMarkerIcon,
+                    visible: false
                 });
                 google.maps.event.addListener(originMarker, 'dragend', function () {
                     //alert('originMarker dragged');

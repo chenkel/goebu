@@ -35,9 +35,18 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
     '$ionicUser', 
     '$interval',
     '$http', 
-    'domSerializer', 
     'persistentStorage',
-  function($q, $timeout, $state, $ionicApp, $ionicUser, $interval, $http, domSerializer, persistentStorage) {
+  function($q, $timeout, $state, $ionicApp, $ionicUser, $interval, $http, persistentStorage) {
+
+    var options = {};
+
+    function log(message) {
+      if (options.silent) {
+        return;
+      }
+
+      console.log.apply(console, arguments);
+    }
 
     var api = {
       getAppId: function() {
@@ -47,7 +56,14 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
         return $ionicApp.getApiKey();
       },
       getApiServer: function() {
-        return $ionicApp.getValue('analytics_api_server');
+        var server = $ionicApp.getValue('analytics_api_server');
+        if (!server) {
+          var msg = 'Ionic Analytics: You are using an old version of ionic-service-core. Update by running:\n    ' +
+                    'ionic rm ionic-service-core\n    ' +
+                    'ionic add ionic-service-core';
+          throw Error(msg);
+        }
+        return server;
       },
       getAnalyticsKey: function() {
         return this.analyticsKey;
@@ -66,7 +82,7 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
           headers: {
             'Authorization': "basic " + btoa(this.getAppId() + ':' + this.getApiKey())
           },
-		  withCredentials: false
+		      withCredentials: false
         };
         return $http(req);
       },
@@ -165,7 +181,7 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
       }).then(function(data) {
 
         // Success from proxy server. Erase event queue.
-        console.log('Ionic Analytics: sent events', eventQueue);
+        log('sent events', eventQueue);
         cache.set('event_queue', {});
 
       }, function(err) {
@@ -193,7 +209,12 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
     }
 
     function enqueueEvent(collectionName, eventData) {
-      console.log('Ionic Analytics: enqueuing event to send later:', collectionName, eventData);
+      if (options.dryRun) {
+        log('event recieved but not sent (dryRun active):', collectionName, eventData);
+        return;
+      } 
+
+      log('enqueuing event to send later:', collectionName, eventData);
 
       // Add timestamp property to the data
       if (!eventData.keen) {
@@ -238,7 +259,7 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
     return {
 
       // Register to get an analytics key
-      register: function() {
+      register: function(optionsParam) {
 
         if (!api.getAppId() || !api.getApiKey()) {
           var msg = 'You need to provide an app id and api key before calling $ionicAnalytics.register().\n    ' +
@@ -246,6 +267,10 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
           throw new Error(msg);
         }
 
+        options = optionsParam || {};
+        if (options.dryRun) {
+          log('dryRun mode is active. Analytics will not send any events.')
+        }
 
         // Request Analytics key from server.
         var promise = api.requestAnalyticsKey().then(function(resp) {
@@ -273,7 +298,7 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
 
         var self = this;
         promise.then(function() {
-          console.log('Ionic Analytics: successfully registered analytics key');
+          log('successfully registered analytics key');
 
           self.track('load');
 
@@ -311,7 +336,11 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
         if (useEventCaching) {
           enqueueEvent(eventName, data);
         } else {
-          api.postEvent(eventName, data);
+          if (options.dryRun) {
+            console.log('dryRun active, will not send event: ', eventName, data);
+          } else {
+            api.postEvent(eventName, data);            
+          }
         }
       },
     };

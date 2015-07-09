@@ -19,14 +19,13 @@ angular.module('goebu', [
     'ionic',
     'ngCordova',
     'ionic.service.core',
-    'ionic.service.push',
     'ionic.service.deploy',
     'goebu.controllers',
     'goebu.services'
 ])
 
     .config(['$ionicAppProvider', function ($ionicAppProvider) {
-         //Identify app
+        //Identify app
         $ionicAppProvider.identify({
             // The App ID for the server
             app_id: '3a1fb0c9',
@@ -35,8 +34,12 @@ angular.module('goebu', [
         });
     }])
 
-    .run(function ($ionicPlatform, $ionicUser, $ionicDeploy, $cordovaDialogs, $ionicLoading, $ionicPush) {
+    .run(function ($ionicPlatform, $ionicUser, $ionicDeploy, $cordovaDialogs, $ionicLoading, $cordovaNetwork) {
         $ionicPlatform.ready(function () {
+
+            navigator.splashscreen.hide();
+            //cordova.exec.setJsToNativeBridgeMode(cordova.exec.jsToNativeModes.XHR_NO_PAYLOAD);
+            //console.log("<-- setJSToNativeBridgeMode");
             var user = $ionicUser.get();
             if (!user.user_id) {
                 // Set your user_id here, or generate a random one
@@ -45,42 +48,101 @@ angular.module('goebu', [
             } else {
                 console.log('Identifying user - found: ', user.user_id);
             }
-
             $ionicUser.identify(user).then(function () {
-                // Register with the Ionic Push service.  All parameters are optional.
-                $ionicPush.register({
-                    canShowAlert: true, //Can pushes show an alert on your screen?
-                    canSetBadge: true, //Can pushes update app icon badges?
-                    canPlaySound: true, //Can notifications play a sound?
-                    canRunActionsOnWake: true, //Can run actions outside the app,
-                    onNotification: function (notification) {
-                        // Handle new push notifications here
-                        console.log(notification);
-                        return true;
-                    }
-                }, user);
             }, function (err) {
                 console.log(err, "<-- err");
             });
 
+            if (typeof analytics !== 'undefined') {
+                console.log("analytics init");
+                var mySuccessCB = function (winParam) {
+                    console.log(winParam, "<-- success");
+                };
+                var myErrorCB = function (error) {
+                    console.log(error, "<-- error");
+                };
+                analytics.startTrackerWithId("UA-29247849-2");
+                analytics.setUserId(user.user_id);
+                analytics.addCustomDimension('1', user.user_id, mySuccessCB, myErrorCB);
+                //analytics.enableAdvertisingIdCollection(true, mySuccessCB, myErrorCB);
+                //analytics.debugMode();
+            } else {
+
+                console.log("Google Analytics Unavailable");
+            }
+
+            downloadAndInstallUpdate();
+
+
+
+            // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
+            // for form inputs)
+            if (window.cordova && window.cordova.plugins.Keyboard) {
+                cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
+            }
+
+            if (window.StatusBar) {
+                // org.apache.cordova.statusbar required
+                window.StatusBar.overlaysWebView(true);
+                window.StatusBar.styleDefault();
+
+                //window.StatusBar.backgroundColorByHexString('#0F0F0F');
+            }
+
+        });
+
+        $ionicPlatform.on('resume', function () {
+            if (typeof analytics !== 'undefined') {
+                console.log("<-- tracking Event resume app");
+                analytics.trackEvent('App', 'Opened');
+            }
+            downloadAndInstallUpdate();
+        });
+
+        function downloadAndInstallUpdate() {
+            //var networkType = $cordovaNetwork.getNetwork();
+            //console.log(networkType, "<-- networkType");
+            //
+            //if (networkType === Connection.WIFI) {
+            //    $ionicDeploy.setChannel("staging");
+            //} else {
+            //    $ionicDeploy.setChannel("production");
+            //}
+
             $ionicDeploy.check().then(function (response) {
                     // response will be true/false
-                    if (response) {
+                    if (response === true) {
                         console.log("ionicDeploy - New updates available");
-                        $cordovaDialogs.confirm('', 'Möchten Sie neuste Version installieren?', ['Ja, gerne.', 'Noch nicht, danke!'])
-                            .then(function (buttonIndex) {
-                                // no button = 0, 'OK' = 1, 'Cancel' = 2
-                                switch (buttonIndex) {
-                                    case 1:
-                                        downloadAndInstallUpdate();
-                                        break;
-                                    case 2:
-                                        $ionicDeploy.load();
-                                        break;
 
-                                }
+                        $ionicDeploy.download().then(function () {
+                            // Extract the updates
+                            $ionicDeploy.extract().then(function () {
+                                // Load the updated version
+                                $ionicDeploy.load();
+                            }, function (error) {
+                                console.log(error, "ionicDeploy - Error extracting");
+                                // Error extracting
+                            }, function (progress) {
+                                // Do something with the zip extraction progress
+                                //console.log(progress, "ionicDeploy - progress unzipping");
+                                $ionicLoading.show({
+                                    template: 'Installiere Update - ' + progress + "% kopiert."
+                                });
+
+                                //$scope.extraction_progress = progress;
                             });
-                        // Download the updates
+                        }, function (error) {
+                            // Error downloading the updates
+                            console.error(error, "ionicDeploy - Error downloading the updates");
+                        }, function (progress) {
+                            // Do something with the download progress
+                            //console.log(progress, "ionicDeploy - progress downloading");
+                            $ionicLoading.show({
+                                template: 'Lade Update herunter - ' + progress + "% geladen."
+                            });
+                            //$scope.download_progress = progress;
+                        });
+
 
                     } else {
                         console.log("ionicDeploy - No new updates available");
@@ -94,53 +156,6 @@ angular.module('goebu', [
                 });
 
 
-
-            // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
-            // for form inputs)
-            if (window.cordova && window.cordova.plugins.Keyboard) {
-                cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
-            }
-
-            if (window.StatusBar) {
-                // org.apache.cordova.statusbar required
-                //window.StatusBar.styleBlackOpaque();
-                //window.StatusBar.styleDefault();
-                window.StatusBar.overlaysWebView(true);
-                window.StatusBar.styleDefault();
-
-                //window.StatusBar.backgroundColorByHexString('#0F0F0F');
-            }
-
-        });
-        function downloadAndInstallUpdate(){
-            $ionicDeploy.download().then(function () {
-                // Extract the updates
-                $ionicDeploy.extract().then(function () {
-                    // Load the updated version
-                    $ionicDeploy.load();
-                }, function (error) {
-                    console.log(error, "ionicDeploy - Error extracting");
-                    // Error extracting
-                }, function (progress) {
-                    // Do something with the zip extraction progress
-                    //console.log(progress, "ionicDeploy - progress unzipping");
-                    $ionicLoading.show({
-                        template: 'Installiere Update - ' + progress + "% kopiert."
-                    });
-
-                    //$scope.extraction_progress = progress;
-                });
-            }, function (error) {
-                // Error downloading the updates
-                console.error(error, "ionicDeploy - Error downloading the updates");
-            }, function (progress) {
-                // Do something with the download progress
-                //console.log(progress, "ionicDeploy - progress downloading");
-                $ionicLoading.show({
-                    template: 'Lade Update herunter - ' + progress  + "% geladen."
-                });
-                //$scope.download_progress = progress;
-            });
         }
     })
 
@@ -151,26 +166,26 @@ angular.module('goebu', [
                 url: '/app',
                 templateUrl: 'templates/home.html'
             });
-            //.state('app', {
-            //    url: "/app",
-            //    abstract: true,
-            //    templateUrl: "templates/menu.html",
-            //    controller: 'AppCtrl'
-            //})
-            //
-            //.state('app.haltestellen', {
-            //    url: "/haltestellen",
-            //    views: {
-            //        'menuContent': {
-            //            templateUrl: "templates/haltestellen.html",
-            //            controller: 'HaltestellenCtrl'
-            //        }
-            //    }
-            //})
-            //.state('haltestelle', {
-            //    url: "/haltestelle/:buslinienId",
-            //    templateUrl: "templates/haltestellen.html"
-            //});
+        //.state('app', {
+        //    url: "/app",
+        //    abstract: true,
+        //    templateUrl: "templates/menu.html",
+        //    controller: 'AppCtrl'
+        //})
+        //
+        //.state('app.haltestellen', {
+        //    url: "/haltestellen",
+        //    views: {
+        //        'menuContent': {
+        //            templateUrl: "templates/haltestellen.html",
+        //            controller: 'HaltestellenCtrl'
+        //        }
+        //    }
+        //})
+        //.state('haltestelle', {
+        //    url: "/haltestelle/:buslinienId",
+        //    templateUrl: "templates/haltestellen.html"
+        //});
 // if none of the above states are matched, use this as the fallback
         $urlRouterProvider.otherwise('/app');
     });

@@ -6,10 +6,10 @@
     "async": "~1.2.1"
   },
   "devDependencies": {
-    "ionic": "driftyco/ionic-bower",
-    "ionic-service-core": "~0.1.7",
-    "ionic-service-deploy": "~0.0.6",
-    "ionic-service-analytics": "master",
+    "ionic": "driftyco/ionic-bower#1.0.1",
+    "ionic-service-core": "*",
+    "ionic-service-deploy": "~0.1.0",
+    "ionic-service-analytics": "*",
     "ngCordova": "~0.1.17-alpha",
     "ionic-service-push": "~0.1.8",
     "ionic-ion-header-shrink": "*"
