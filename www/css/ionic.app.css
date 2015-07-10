@@ -7693,12 +7693,12 @@ a.button {
   -webkit-transition-duration: 0s;
   transition-duration: 0s; }
 
-.scroll {
+#map-content > .scroll {
   height: 100%; }
-  .scroll.second-stage {
+  #map-content > .scroll.second-stage {
     height: initial; }
 
-.scroll-content {
+#map-content.scroll-content {
   z-index: 11; }
 
 .map-wrapper {

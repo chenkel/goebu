@@ -1,4 +1,4 @@
-.scroll {
+#map-content > .scroll {
 
   height: 100%;
 
@@ -7,7 +7,7 @@
   }
 }
 
-.scroll-content {
+#map-content.scroll-content {
   z-index: 11;
 }
 

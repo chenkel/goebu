@@ -35,7 +35,6 @@
     "cordova-plugin-dialogs",
     "cordova-plugin-statusbar",
     "cordova-plugin-whitelist",
-    "cordova-plugin-console",
     "cordova-plugin-splashscreen",
     {
       "locator": "https://github.com/danwilson/google-analytics-plugin.git",

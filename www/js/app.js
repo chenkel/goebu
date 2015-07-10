@@ -20,6 +20,7 @@ angular.module('goebu', [
     'ngCordova',
     'ionic.service.core',
     'ionic.service.deploy',
+    'goebu.directives',
     'goebu.controllers',
     'goebu.services'
 ])
@@ -34,12 +35,12 @@ angular.module('goebu', [
         });
     }])
 
-    .run(function ($ionicPlatform, $ionicUser, $ionicDeploy, $cordovaDialogs, $ionicLoading, $cordovaNetwork) {
+    .run(function ($ionicPlatform, $ionicUser, $ionicDeploy, $cordovaDialogs, $ionicLoading, $cordovaNetwork, $localstorage) {
         $ionicPlatform.ready(function () {
-
             navigator.splashscreen.hide();
             //cordova.exec.setJsToNativeBridgeMode(cordova.exec.jsToNativeModes.XHR_NO_PAYLOAD);
             //console.log("<-- setJSToNativeBridgeMode");
+
             var user = $ionicUser.get();
             if (!user.user_id) {
                 // Set your user_id here, or generate a random one
@@ -67,18 +68,35 @@ angular.module('goebu', [
                 //analytics.enableAdvertisingIdCollection(true, mySuccessCB, myErrorCB);
                 //analytics.debugMode();
             } else {
-
                 console.log("Google Analytics Unavailable");
             }
 
+            var firstTimeOpened = $localstorage.get('firstTimeOpened');
+
+            if (typeof firstTimeOpened === 'undefined') {
+                analytics.trackEvent('System-Captured', 'App', 'firstTimeOpened', 1);
+                $localstorage.set('firstTimeOpened', moment().unix());
+
+            } else {
+                analytics.trackEvent('System-Captured', 'App', 'Opened', 1);
+            }
+
+            var surveyGroup = $localstorage.get('surveyGroup');
+            if (typeof surveyGroup === 'undefined') {
+                surveyGroup = Math.floor(Math.random() * 3) + 1;
+                $localstorage.set('surveyGroup', surveyGroup);
+            }
+
+
+
+
             downloadAndInstallUpdate();
-
-
 
             // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
             // for form inputs)
             if (window.cordova && window.cordova.plugins.Keyboard) {
-                cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
+                cordova.plugins.Keyboard.hideKeyboardAccessoryBar(false);
+                cordova.plugins.Keyboard.disableScroll(true);
             }
 
             if (window.StatusBar) {
@@ -94,7 +112,7 @@ angular.module('goebu', [
         $ionicPlatform.on('resume', function () {
             if (typeof analytics !== 'undefined') {
                 console.log("<-- tracking Event resume app");
-                analytics.trackEvent('App', 'Opened');
+                analytics.trackEvent('System-Captured', 'App', 'Resumed', 1);
             }
             downloadAndInstallUpdate();
         });
@@ -143,7 +161,6 @@ angular.module('goebu', [
                             //$scope.download_progress = progress;
                         });
 
-
                     } else {
                         console.log("ionicDeploy - No new updates available");
                         // No updates, load the most up to date version of the app
@@ -155,7 +172,6 @@ angular.module('goebu', [
                     console.error(error, "ionicDeploy - Error checking for updates");
                 });
 
-
         }
     })
 
@@ -166,26 +182,6 @@ angular.module('goebu', [
                 url: '/app',
                 templateUrl: 'templates/home.html'
             });
-        //.state('app', {
-        //    url: "/app",
-        //    abstract: true,
-        //    templateUrl: "templates/menu.html",
-        //    controller: 'AppCtrl'
-        //})
-        //
-        //.state('app.haltestellen', {
-        //    url: "/haltestellen",
-        //    views: {
-        //        'menuContent': {
-        //            templateUrl: "templates/haltestellen.html",
-        //            controller: 'HaltestellenCtrl'
-        //        }
-        //    }
-        //})
-        //.state('haltestelle', {
-        //    url: "/haltestelle/:buslinienId",
-        //    templateUrl: "templates/haltestellen.html"
-        //});
 // if none of the above states are matched, use this as the fallback
         $urlRouterProvider.otherwise('/app');
     });

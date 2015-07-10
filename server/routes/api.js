@@ -2,6 +2,7 @@
 var express = require("express");
 var router = express.Router();
 var gtfs = require("../lib/gtfs");
+var survey = require("../lib/survey");
 
 ///* AgencyList */
 //router.get("/agencies", function (req, res, next) {
@@ -275,6 +276,13 @@ router.get("/times/:agency/route/:route_id/direction/:direction_id/stop/:stop_id
         stop_id = req.params.stop_id,
         direction_id = parseInt(req.params.direction_id, 10);
     gtfs.getTimesByStop(agency_key, route_id, stop_id, direction_id, return_times_cb(res, next));
+});
+
+router.get("/survey/opened/:unix/group/:group", function (req, res, next) {
+    var unixTime = req.params.unix,
+        group_id = req.params.group;
+
+    survey.returnSurveyByTimeAndGroup(unixTime, group_id, return_times_cb(res, next));
 });
 
 module.exports = router;
