@@ -1,5 +1,6 @@
 "use strict";
 //var host = "http://localhost:3000/";
+
 var host = "http://goebu.christopherhenkel.de:3000/";
 
 angular.module("goebu.services")
@@ -25,6 +26,7 @@ angular.module("goebu.services")
                     return null;
                 }
             }
+
             return parseInt(timeParts[0], 10) * 60 * 60 + parseInt(timeParts[1], 10) * 60 + parseInt(timeParts[2], 10);
         }
 

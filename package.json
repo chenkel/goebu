@@ -21,10 +21,6 @@
     "url": "https://github.com/chenkel/goebu.git"
   },
   "cordovaPlugins": [
-    {
-      "locator": "https://github.com/phonegap-build/PushPlugin.git",
-      "id": "com.phonegap.plugins.PushPlugin"
-    },
     "cordova-plugin-geolocation",
     "cordova-plugin-crosswalk-webview",
     "cordova-plugin-device",
@@ -41,10 +37,6 @@
       "id": "cordova-plugin-google-analytics"
     },
     "cordova-plugin-googleplayservices",
-    {
-      "locator": "https://github.com/driftyco/ionic-plugins-deploy",
-      "id": "com.ionic.deploy"
-    },
     "cordova-plugin-network-information",
     {
       "locator": "https://github.com/EddyVerbruggen/cordova-plugin-actionsheet.git",
@@ -53,10 +45,14 @@
     {
       "locator": "https://github.com/EddyVerbruggen/Toast-PhoneGap-Plugin.git",
       "id": "nl.x-services.plugins.toast"
+    },
+    {
+      "locator": "https://github.com/driftyco/ionic-plugins-deploy#v0.2.0",
+      "id": "com.ionic.deploy"
     }
   ],
   "cordovaPlatforms": [
-    "android",
-    "ios"
+    "ios",
+    "android"
   ]
 }

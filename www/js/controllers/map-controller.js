@@ -6,9 +6,13 @@ var departureOrArrivalTime, isDeparture;
 var live_bus_position_timer, live_bus_bounds;
 var liveBusPositions = [];
 var routePaths = [];
-var clickMapEventHandler;
 
-angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ionicLoading, $ionicSlideBoxDelegate, $cordovaGeolocation, $ionicNavBarDelegate, $ionicPlatform, $cordovaDatePicker, $cordovaToast, $ionicModal, $cordovaDialogs, $http, $timeout, busRadar, $localstorage) {
+angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $http, $timeout,
+                                                                    $ionicPlatform, $ionicLoading, $ionicModal,
+                                                                    $ionicSlideBoxDelegate, $ionicNavBarDelegate,
+                                                                    $cordovaDatePicker, $cordovaToast, $cordovaActionSheet,
+                                                                    $cordovaGeolocation, $cordovaDialogs,
+                                                                    busRadar, HardwareBackButtonManager, $localstorage) {
 
     var rendererOptions = {
         draggable: true,
@@ -22,34 +26,60 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
 
     var currentBusLines;
     var routeIndexChanged, previousRouteIndex;
-    var isIOS = ionic.Platform.isIOS();
     var isAndroid = ionic.Platform.isAndroid();
 
     $scope.routeCalculated = false;
 
-    var confirmButtons = ['Abfahrt', 'Ankunft', 'Auf aktuelle Zeit zurücksetzen'];
+    //var confirmButtons = ['Abfahrt', 'Ankunft', 'Auf aktuelle Zeit zurücksetzen'];
+
+    var actionSheetOptions = {
+        title: 'Möchten Sie die Abfahrts- oder Ankunftzeit ändern?',
+        buttonLabels: ['Abfahrt', 'Ankunft'],
+        addCancelButtonWithLabel: 'Abbrechen',
+        androidEnableCancelButton: true,
+        winphoneEnableCancelButton: true,
+        addDestructiveButtonWithLabel: 'Auf aktuelle Zeit zurücksetzen'
+    };
 
     $scope.setTime = function () {
-
-        $cordovaDialogs.confirm('Möchten Sie die Abfahrts- oder Ankunftzeit ändern?', 'Zeit', confirmButtons)
+        $cordovaActionSheet.show(actionSheetOptions)
             .then(function (buttonIndex) {
-                // no button = 0, 'OK' = 1, 'Cancel' = 2
                 switch (buttonIndex) {
+
                     case 1:
-                        isDeparture = true;
-                        displayTimePicker();
-                        break;
-                    case 2:
-                        isDeparture = false;
-                        displayTimePicker();
-                        break;
-                    case 3:
                         isDeparture = true;
                         departureOrArrivalTime = new Date();
                         $scope.calcRoute();
                         break;
+                    case 2:
+                        isDeparture = true;
+                        displayTimePicker();
+                        break;
+                    case 3:
+                        isDeparture = false;
+                        displayTimePicker();
+                        break;
                 }
             });
+        //$cordovaDialogs.confirm('Möchten Sie die Abfahrts- oder Ankunftzeit ändern?', 'Zeit', confirmButtons)
+        //    .then(function (buttonIndex) {
+        //        // no button = 0, 'OK' = 1, 'Cancel' = 2
+        //        switch (buttonIndex) {
+        //            case 1:
+        //                isDeparture = true;
+        //                displayTimePicker();
+        //                break;
+        //            case 2:
+        //                isDeparture = false;
+        //                displayTimePicker();
+        //                break;
+        //            case 3:
+        //                isDeparture = true;
+        //                departureOrArrivalTime = new Date();
+        //                $scope.calcRoute();
+        //                break;
+        //        }
+        //    });
 
     };
 
@@ -275,7 +305,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
         });
 
         //new LongClick(map, 300);
-        google.maps.event.addListener(map, 'dblclick', function (event) {
+        google.maps.event.addListener(map, 'dblclick', function () {
             console.log("<-- working dude");
         });
 
@@ -708,14 +738,17 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
     function showSurveyIfNeeded() {
         var firstTimeOpened = $localstorage.get('firstTimeOpened');
         var surveyGroup = $localstorage.get('surveyGroup');
+
         if (typeof firstTimeOpened !== 'undefined' && typeof surveyGroup !== 'undefined') {
+
             $http.get(busRadar.host + "api/survey/opened/" + firstTimeOpened + "/group/" + surveyGroup)
                 .success(function (result) {
+                    console.log("showSurveyIfNeeded");
                     if (result && result.id) {
                         $scope.surveyData = result;
                         var completedSurveys = $localstorage.getObject('surveys');
                         if (!completedSurveys[result.id]) {
-                            $scope.modal.show();
+                            $scope.openModal();
                         } else {
                             console.log("Survey already finished.");
                             $scope.closeModal();
@@ -726,6 +759,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
                     }
                 });
         } else {
+            console.log("firstTimeOpened OR surveyGroup missing");
             console.log(firstTimeOpened, "<-- firstTimeOpened");
             console.log(surveyGroup, "<-- surveyGroup");
         }
@@ -733,6 +767,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
     }
 
     $ionicPlatform.ready(function () {
+
         $scope.answers = {};
         $ionicModal.fromTemplateUrl("templates/survey-modal.html", {
             scope: $scope,
@@ -743,9 +778,13 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
         }.bind($scope));
 
         $scope.openModal = function () {
+            HardwareBackButtonManager.disable();
+            console.log("HardwareBackButtonManager disable");
             $scope.modal.show();
         };
         $scope.closeModal = function () {
+            HardwareBackButtonManager.enable();
+            console.log("HardwareBackButtonManager enable");
             $scope.modal.hide();
         };
 
@@ -783,15 +822,18 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $ion
 
         $scope.$on("$destroy", function () {
             //Cleanup the modal when we"re done with it!
+            HardwareBackButtonManager.enable();
             $scope.modal.remove();
         });
 
         $scope.$on("modal.hidden", function () {
             // Execute action on hide modal
+            HardwareBackButtonManager.enable();
         });
 
         $scope.$on("modal.removed", function () {
             // Execute action on remove modal
+            HardwareBackButtonManager.enable();
         });
     });
 
