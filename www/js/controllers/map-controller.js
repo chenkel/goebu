@@ -119,6 +119,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
 
     $scope.calcRoute = function () {
         if (originMarker && destinationMarker) {
+
             console.log("calculating new route");
             if (typeof analytics !== 'undefined') {
                 console.log("<-- tracking Event calcRoute");
@@ -164,8 +165,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
                         google.maps.event.trigger(map, 'resize');
 
                     }
-                    var titleText = 'Ziel und Start sind verschiebbar';
-                    $ionicNavBarDelegate.title(titleText);
+
                     findBusLines(response);
                 }
                 else {
@@ -610,6 +610,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
                 }
                 currentBusLines = make_array_unique(currentBusLines);
                 liveBusPositions = clear_markers(liveBusPositions);
+                $ionicNavBarDelegate.title('Route wurde berechnet.');
                 if (currentBusLines.length > 0) {
                     restartLiveBusTimer();
                 } else {
@@ -622,27 +623,34 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
     //var liveBusPositions = [];
     var touched_live_bus_bounds = false;
     $scope.updateBusMarker = function (cb) {
+
         busRadar.getLivePositionsForBusLines(currentBusLines, function () {
+                if (busRadar.titleText){
+                    var titleText = busRadar.titleText;
+                    //console.log(busRadar.titleText, "<-- busRadar.titleText");
+                    $ionicNavBarDelegate.title(titleText);
+                }
                 if (busRadar.livePositions && busRadar.livePositions.length > 0) {
                     if (cb) {
                         live_bus_bounds = new google.maps.LatLngBounds();
                         live_bus_bounds.extend(destinationMarker.getPosition());
                         live_bus_bounds.extend(originMarker.getPosition());
+
+
+
                         touched_live_bus_bounds = false;
                         for (var i = 0, len = busRadar.routes.length; i < len; i++) {
                             var currentBusRoute = busRadar.routes[i];
                             var polylinePoints = [];
-                            if (stops_fixtures &&
-                                stops_fixtures.sequences &&
-                                stops_fixtures.sequences[currentBusRoute.route_id] &&
-                                stops_fixtures.sequences[currentBusRoute.route_id][currentBusRoute.direction_id]) {
-                                for (var k = 0; k < stops_fixtures.sequences[currentBusRoute.route_id][currentBusRoute.direction_id].length; k += 2) {
-                                    var currentCoordPair = stops_fixtures.sequences[currentBusRoute.route_id][currentBusRoute.direction_id];
+                            if (currentBusRoute &&
+                                currentBusRoute.coords) {
+                                for (var k = 0; k < currentBusRoute.coords.length; k += 2) {
+                                    var currentCoordPair = currentBusRoute.coords;
                                     polylinePoints.push(new google.maps.LatLng(currentCoordPair[k], currentCoordPair[k + 1]));
                                 }
                                 var routePath = new google.maps.Polyline({
                                     path: polylinePoints,
-                                    strokeColor: stops_fixtures.sequences[currentBusRoute.route_id].color,
+                                    strokeColor: currentBusRoute.color,
                                     strokeOpacity: 0.6,
                                     strokeWeight: 2
                                 });
@@ -743,7 +751,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
 
             $http.get(busRadar.host + "api/survey/opened/" + firstTimeOpened + "/group/" + surveyGroup)
                 .success(function (result) {
-                    console.log("showSurveyIfNeeded");
+                    //console.log("showSurveyIfNeeded");
                     if (result && result.id) {
                         $scope.surveyData = result;
                         var completedSurveys = $localstorage.getObject('surveys');
@@ -779,23 +787,22 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
 
         $scope.openModal = function () {
             HardwareBackButtonManager.disable();
-            console.log("HardwareBackButtonManager disable");
+            //console.log("HardwareBackButtonManager disable");
             $scope.modal.show();
         };
         $scope.closeModal = function () {
             HardwareBackButtonManager.enable();
-            console.log("HardwareBackButtonManager enable");
+            //console.log("HardwareBackButtonManager enable");
             $scope.modal.hide();
         };
 
         $scope.submitSurvey = function (answers) {
-            console.log(JSON.stringify(answers), "<-- answers");
-            console.log(JSON.stringify($scope.surveyData.questions), "<-- $scope.surveyData.questions");
+            //console.log(JSON.stringify(answers), "<-- answers");
+            //console.log(JSON.stringify($scope.surveyData.questions), "<-- $scope.surveyData.questions");
 
             if (Object.keys(answers).length !== $scope.surveyData.questions.length) {
                 $cordovaDialogs.alert('Bitte beantworten Sie alle Fragen', 'Etwas fehlt noch...', 'Okay');
             } else {
-                // TODO: übertrage Antworten an Google Analztics
                 if (typeof analytics !== 'undefined') {
                     var answerTime = moment().unix();
                     for (var answerId in answers) {
@@ -814,7 +821,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
                 }
                 completedSurveys[$scope.surveyData.id] = true;
                 $localstorage.setObject('surveys', completedSurveys);
-                console.log(JSON.stringify(completedSurveys), "<-- localStorage surveys");
+                //console.log(JSON.stringify(completedSurveys), "<-- localStorage surveys");
 
                 $scope.closeModal();
             }
@@ -842,7 +849,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
     });
     $ionicPlatform.on('pause', function () {
         $scope.answers = {};
-        console.log("app goes in the background");
+        //console.log("app goes in the background");
         $scope.surveyData = null;
         $scope.closeModal();
     });

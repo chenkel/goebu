@@ -1,29 +1,8 @@
 "use strict";
-var stops_fixtures = {};
+var fixtures = {};
 
-//// global on the server, window in the browser
-//var root, previous_fixtures;
-//
-//if (typeof window === 'object' && this === window) {
-//    root = window;
-//}
-//else if (typeof global === 'object' && this === global) {
-//    root = global;
-//}
-//else {
-//    root = this;
-//}
-//
-//if (root !== null) {
-//    previous_fixtures = root.stops_fixtures;
-//}
-//
-//async.noConflict = function () {
-//    root.stops_fixtures = previous_fixtures;
-//    return stops_fixtures;
-//};
 
-stops_fixtures.sequences =
+fixtures.routes =
 {
     "1": {
         "0": [
@@ -2669,32 +2648,42 @@ stops_fixtures.sequences =
     }
 };
 
-stops_fixtures.sequences[1].color = '';
-stops_fixtures.sequences[11].color = '#FF8700';
-stops_fixtures.sequences[12].color = '#FF8700';
-stops_fixtures.sequences[2].color = '';
-stops_fixtures.sequences[21].color = '#D70000';
-stops_fixtures.sequences[22].color = '#D70000';
-stops_fixtures.sequences[23].color = '#D70000';
-stops_fixtures.sequences[230].color = '';
-stops_fixtures.sequences[3].color = '';
-stops_fixtures.sequences[31].color = '#7AF500';
-stops_fixtures.sequences[32].color = '#7AF500';
-stops_fixtures.sequences[33].color = '#53C900';
-stops_fixtures.sequences[4].color = '';
-stops_fixtures.sequences[41].color = '#00FFFF';
-stops_fixtures.sequences[42].color = '#00FFFF';
-stops_fixtures.sequences[5].color = '';
-stops_fixtures.sequences[50].color = '#137E08';
-stops_fixtures.sequences[6].color = '';
-stops_fixtures.sequences[61].color = '#860068';
-stops_fixtures.sequences[62].color = '#860068';
-stops_fixtures.sequences[7].color = '';
-stops_fixtures.sequences[71].color = '#0D21FF';
-stops_fixtures.sequences[72].color = '#0D21FF';
-stops_fixtures.sequences[73].color = '#0F21FF';
-stops_fixtures.sequences[8].color = '';
-stops_fixtures.sequences[80].color = '#FFCC00';
-stops_fixtures.sequences[91].color = '#8653D9';
-stops_fixtures.sequences[92].color = '#8653D9';
+fixtures.routes[1].color = '';
+fixtures.routes[11].color = '#FF8700';
+fixtures.routes[12].color = '#FF8700';
+fixtures.routes[2].color = '';
+fixtures.routes[21].color = '#D70000';
+fixtures.routes[22].color = '#D70000';
+fixtures.routes[23].color = '#D70000';
+fixtures.routes[230].color = '';
+fixtures.routes[3].color = '';
+fixtures.routes[31].color = '#7AF500';
+fixtures.routes[32].color = '#7AF500';
+fixtures.routes[33].color = '#53C900';
+fixtures.routes[4].color = '';
+fixtures.routes[41].color = '#00FFFF';
+fixtures.routes[42].color = '#00FFFF';
+fixtures.routes[5].color = '';
+fixtures.routes[50].color = '#137E08';
+fixtures.routes[6].color = '';
+fixtures.routes[61].color = '#860068';
+fixtures.routes[62].color = '#860068';
+fixtures.routes[7].color = '';
+fixtures.routes[71].color = '#0D21FF';
+fixtures.routes[72].color = '#0D21FF';
+fixtures.routes[73].color = '#0F21FF';
+fixtures.routes[8].color = '';
+fixtures.routes[80].color = '#FFCC00';
+fixtures.routes[91].color = '#8653D9';
+fixtures.routes[92].color = '#8653D9';
 
+module.exports = {
+    returnRouteCoords: function (route, direction_id) {
+        global.log.debug("route, direction_id", route, direction_id);
+        global.log.debug("fixtures.routes[1][1]", fixtures.routes[1][1]);
+        return fixtures.routes[route][direction_id];
+    },
+    returnRouteColor: function(route){
+      return fixtures.routes[route].color;
+    }
+};

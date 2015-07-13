@@ -12,6 +12,7 @@
     "ionic-service-analytics": "*",
     "ngCordova": "~0.1.17-alpha",
     "ionic-service-push": "~0.1.8",
-    "ionic-ion-header-shrink": "*"
+    "ionic-ion-header-shrink": "*",
+    "platform": "~1.3.0"
   }
 }

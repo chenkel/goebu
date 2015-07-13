@@ -38,8 +38,8 @@ angular.module('goebu', [
     .run(function ($ionicPlatform, $ionicUser, $ionicDeploy, $cordovaDialogs, $ionicLoading, $cordovaNetwork, $localstorage) {
         $ionicPlatform.ready(function () {
             navigator.splashscreen.hide();
-            //cordova.exec.setJsToNativeBridgeMode(cordova.exec.jsToNativeModes.XHR_NO_PAYLOAD);
-            //console.log("<-- setJSToNativeBridgeMode");
+            cordova.exec.setJsToNativeBridgeMode(cordova.exec.jsToNativeModes.XHR_NO_PAYLOAD);
+            console.log("<-- setJSToNativeBridgeMode");
 
             var user = $ionicUser.get();
             if (!user.user_id) {

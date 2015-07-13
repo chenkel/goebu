@@ -4,13 +4,14 @@ var async = require("async"),
     mongoose = require("mongoose"),
 //_ = require("underscore"),
     moment = require("moment"),
+    fixtures = require("../lib/fixtures"),
     utils = require("./utils");
 
-//var timeCheatSet = 57890,
-// timeCheat = timeCheatSet - utils.timeToSeconds(new Date());
+var timeCheatSet = 57890,
+ timeCheat = timeCheatSet - utils.timeToSeconds(new Date());
 
-var timeCheat = null,
-    timeCheatSet = null;
+//var timeCheat = null,
+//    timeCheatSet = null;
 
 if (typeof timeCheatSet !== 'undefined' && timeCheatSet !== null) {
     global.log.warn("[Time Cheat activated] Time is set to: ", timeCheatSet, " -->", utils.secondsToTime(timeCheatSet));
@@ -1510,9 +1511,15 @@ function findStopTimesWithTripsAndTimeHorizon(goebu_params, cb) {
 }
 
 function attachStopsFromStopIdsForRoutes(goebu_params, cb) {
+    goebu_params.titleText = 'Marker noch verschiebbar';
     async.each(goebu_params.routes, function (route, eachCallback) {
         if (route.stop_ids && route.stop_ids.length > 0) {
+            // TODO: fix so dass aktuelle Trips gezeigt werden
+            route.coords = fixtures.returnRouteCoords(route.route_id, route.direction_id);
+            route.color = fixtures.returnRouteColor(route.route_id);
 
+
+            //global.log.debug("JSON.stringify", JSON.stringify(route));
             var query = Stop.find({
                 agency_key: goebu_params.agency_key,
                 stop_id: {

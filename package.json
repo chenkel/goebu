@@ -47,9 +47,15 @@
       "id": "nl.x-services.plugins.toast"
     },
     {
-      "locator": "https://github.com/driftyco/ionic-plugins-deploy#v0.2.0",
+      "locator": "https://github.com/driftyco/ionic-plugins-deploy",
       "id": "com.ionic.deploy"
-    }
+    },
+    "cordova-plugin-datepicker",
+    "cordova-plugin-google-analytics",
+    "nl.x-services.plugins.actionsheet",
+    "nl.x-services.plugins.toast",
+    "com.ionic.keyboard",
+    "org.apache.cordova.splashscreen"
   ],
   "cordovaPlatforms": [
     "ios",

@@ -1,7 +1,7 @@
 "use strict";
-//var host = "http://localhost:3000/";
+var host = "http://127.0.0.1:3000/";
 
-var host = "http://goebu.christopherhenkel.de:3000/";
+//var host = "http://goebu.christopherhenkel.de:3000/";
 
 angular.module("goebu.services")
     .factory('busRadar', function ($http) {
@@ -208,9 +208,10 @@ angular.module("goebu.services")
                     .success(function (result) {
                         if (result) {
                             busRadar.nextUpdate = moment(result.expiryTime);
+                            busRadar.titleText = result.titleText;
                             console.log(busRadar.nextUpdate.format(), "<-- next API Call");
                             previousResult = result;
-                            //console.log(result, "<-- result");
+                            //console.log(JSON.stringify(result), "<-- result");
                             constructLiveSequences(result, callbackConstructLiveSequences);
                         }
                         previousBusLineQuery = busLinesQuery;
