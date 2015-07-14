@@ -1,6 +1,6 @@
 <ion-modal-view>
     <ion-header-bar>
-        <h1 class="title">{{surveyData.title}}</h1>
+        <h1 class="survey title">{{surveyData.title}}</h1>
     </ion-header-bar>
 
     <!--<ion-scroll>-->
@@ -8,25 +8,24 @@
         <form name="surveyFormYo"
               novalidate
               ng-submit="submitSurvey">
-
             <div class="list" ng-repeat="q in surveyData.questions track by q.id">
 
                 <div class="item item-text-wrap">
-                    <h2>{{q.text}}</h2>
+                    <h2 class="survey question">{{q.text}}</h2>
                 </div>
 
                 <div ng-if='q.options.length > 0'>
-                    <label class="item item-radio" ng-repeat="o in q.options">
+                    <label class="item item-radio survey survey-radio" ng-repeat="o in q.options">
                         <input type="radio" name={{q.text}} ng-model="answers[q.id]" value={{o}}"/>
 
-                        <div class="item-content">
+                        <div class="item-content survey answer answer-choice">
                             {{o}}
                         </div>
-                        <i class="radio-icon ion-checkmark"></i>
+                        <i class="radio-icon ion-checkmark-round"></i>
                     </label>
                 </div>
                 <div ng-if='q.options.length == 0'>
-                    <label class="item item-input">
+                    <label class="item item-input survey answer answer-free">
                         <i class="icon ion-arrow-right-c placeholder-icon"></i>
                         <input type="number" placeholder="Bitte geben Sie eine Zahl an." ng-model="answers[q.id]">
                     </label>
@@ -45,11 +44,11 @@
     </ion-content>
     <!--</ion-scroll>-->
 
-    <ion-footer-bar class="bar bar-footer bar-balanced" ng-click=submitSurvey(answers)>
+    <ion-footer-bar class="bar bar-footer bar-positive" ng-click=submitSurvey(answers)>
         <h1 class="title">{{surveyData.description}}</h1>
 
         <div class="buttons">
-            <button class="button button-icon ion-checkmark-circled"></button>
+            <button class="button button-icon ion-play"></button>
         </div>
     </ion-footer-bar>
 </ion-modal-view>

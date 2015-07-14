@@ -1,0 +1,44 @@
+.survey {
+  &.title {
+
+  }
+
+  &.question {
+    font-size: 100%;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  &.answer {
+    font-size: 90%;
+
+    background-color: #f8f8f8;
+  }
+
+  &.answer:checked {
+
+  }
+
+  &.answer-choice {
+
+  }
+
+  &.answer-free {
+
+  }
+
+  &.survey-radio > input:checked ~ .item-content {
+    border-color: #28a54c;
+    background-color: #33cd5f;
+    //background-image: linear-gradient(180deg, #28a54c, #0c60ee 50%, transparent 50%);
+    color: #fff;
+  }
+
+  &.description{
+    text-align: center;
+    border-color: #111;
+    background-color: #444444;
+    color: #fff;
+  }
+
+}

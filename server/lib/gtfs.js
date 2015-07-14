@@ -7,11 +7,11 @@ var async = require("async"),
     fixtures = require("../lib/fixtures"),
     utils = require("./utils");
 
-var timeCheatSet = 57890,
- timeCheat = timeCheatSet - utils.timeToSeconds(new Date());
-
-//var timeCheat = null,
-//    timeCheatSet = null;
+//var timeCheatSet = 57890,
+// timeCheat = timeCheatSet - utils.timeToSeconds(new Date());
+//
+var timeCheat = null,
+    timeCheatSet = null;
 
 if (typeof timeCheatSet !== 'undefined' && timeCheatSet !== null) {
     global.log.warn("[Time Cheat activated] Time is set to: ", timeCheatSet, " -->", utils.secondsToTime(timeCheatSet));
@@ -1465,12 +1465,12 @@ function findStopTimesWithTripsAndTimeHorizon(goebu_params, cb) {
             })
 
             if (route && route.stop_sequences && route.stop_sequences.arrival && route.stop_sequences.arrival.stop_sequence !== null) {
-                query = query.where("stop_sequence").lte(route.stop_sequences.departure.stop_sequence + 4);
+                query = query.where("stop_sequence").lte(route.stop_sequences.arrival.stop_sequence + 2);
                 global.log.info("route.stop_sequences.arrival.stop_sequence", route.stop_sequences.arrival.stop_sequence);
             }
 
             if (route && route.stop_sequences && route.stop_sequences.departure && route.stop_sequences.departure.stop_sequence !== null) {
-                query = query.where("stop_sequence").gte(route.stop_sequences.departure.stop_sequence - 20);
+                query = query.where("stop_sequence").gte(route.stop_sequences.departure.stop_sequence - 10);
                 global.log.info("route.stop_sequences.departure.stop_sequence", route.stop_sequences.departure.stop_sequence);
             }
 

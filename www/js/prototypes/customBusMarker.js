@@ -91,7 +91,7 @@ CustomBusMarker.prototype.setRouteIdAndIsStalled = function (route_id, isStalled
             this.div.innerHTML = '<span class="' + innerHTMLclass + '">' + route_id + '</span>';
         }
     } else {
-        console.log(this.div, route_id, "<-- this.div, route_id");
+        //console.log(this.div, route_id, "<-- this.div, route_id");
     }
 
 };

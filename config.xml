@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <widget id="de.christopherhenkel.goebu" version="0.2.8" build="2" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
-  <name>Busradar - Göttingen</name>
+  <name>Busradar</name>
   <description>
         Die Göttinger Bus App mit Live Busradar
     </description>

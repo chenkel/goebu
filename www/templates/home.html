@@ -17,15 +17,13 @@
 
         </ion-nav-buttons>
     </ion-nav-bar>
-    <ion-content
-            header-shrink-twitter-style
-            scroll-event-interval="5"
-            id="map-content">
+    <ion-content header-shrink-twitter-style
+                 scroll-event-interval="5"
+                 id="map-content">
 
-        <div class="map-wrapper"
-             >
+        <div class="map-wrapper">
             <div scroll="false" data-tap-disabled="true">
-                <div id="map_canvas"></div>
+                <div id="map_canvas" on-hold="test($event.gesture.center)"></div>
             </div>
         </div>
         <ion-list>

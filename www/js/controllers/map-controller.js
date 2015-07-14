@@ -7,11 +7,11 @@ var live_bus_position_timer, live_bus_bounds;
 var liveBusPositions = [];
 var routePaths = [];
 
-angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $http, $timeout,
+angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, $scope, $http, $timeout,
                                                                     $ionicPlatform, $ionicLoading, $ionicModal,
                                                                     $ionicSlideBoxDelegate, $ionicNavBarDelegate,
                                                                     $cordovaDatePicker, $cordovaToast, $cordovaActionSheet,
-                                                                    $cordovaGeolocation, $cordovaDialogs,
+                                                                    $cordovaGeolocation, $cordovaDialogs, $cordovaNetwork,
                                                                     busRadar, HardwareBackButtonManager, $localstorage) {
 
     var rendererOptions = {
@@ -22,7 +22,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
     var directionsService = new google.maps.DirectionsService();
 
     var map;
-    var mapCanvasDiv, scrollDiv, mapWrapperDiv;
+    var mapCanvasDiv, scrollDiv, mapWrapperDiv, holdOverlay, mapCanvasDivTop;
 
     var currentBusLines;
     var routeIndexChanged, previousRouteIndex;
@@ -32,7 +32,42 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
 
     //var confirmButtons = ['Abfahrt', 'Ankunft', 'Auf aktuelle Zeit zurücksetzen'];
 
-    var actionSheetOptions = {
+    var setMarkerActionSheetOptions = {
+        title: 'Möchten Sie an diesem Ort Start oder Ziel festlegen?',
+        buttonLabels: ['Start', 'Ziel'],
+        addCancelButtonWithLabel: 'Abbrechen',
+        androidEnableCancelButton: true,
+        winphoneEnableCancelButton: true
+    };
+    $scope.test = function (xAndy) {
+        if (originMarker && destinationMarker) {
+
+            if (mapCanvasDiv) {
+                var coordinates = holdOverlay.getProjection().fromContainerPixelToLatLng(
+                    new google.maps.Point(xAndy.pageX, xAndy.pageY - mapCanvasDivTop)
+                );
+                if (coordinates) {
+                    //console.log(coordinates.lat(), coordinates.lng(), "<-- coordinates.lat, coordinates.lng");
+                    $cordovaActionSheet.show(setMarkerActionSheetOptions)
+                        .then(function (buttonIndex) {
+                            switch (buttonIndex) {
+                                case 1:
+                                    console.log("<-- origin");
+                                    setOriginMarker(coordinates.lat(), coordinates.lng());
+                                    break;
+                                case 2:
+                                    console.log("<-- dest");
+                                    setDestinationMarker(coordinates.lat(), coordinates.lng());
+                                    break;
+                            }
+                        });
+                }
+
+            }
+        }
+    };
+
+    var setTimeActionSheetOptions = {
         title: 'Möchten Sie die Abfahrts- oder Ankunftzeit ändern?',
         buttonLabels: ['Abfahrt', 'Ankunft'],
         addCancelButtonWithLabel: 'Abbrechen',
@@ -42,7 +77,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
     };
 
     $scope.setTime = function () {
-        $cordovaActionSheet.show(actionSheetOptions)
+        $cordovaActionSheet.show(setTimeActionSheetOptions)
             .then(function (buttonIndex) {
                 switch (buttonIndex) {
 
@@ -118,72 +153,79 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
     }
 
     $scope.calcRoute = function () {
-        if (originMarker && destinationMarker) {
+        if ($cordovaNetwork.isOnline()) {
+            if (originMarker && destinationMarker) {
+                var request = {
+                    origin: originMarker.getPosition(),
+                    destination: destinationMarker.getPosition(),
+                    travelMode: google.maps.TravelMode.TRANSIT,
+                    provideRouteAlternatives: true
+                };
+                if (departureOrArrivalTime) {
+                    if (isDeparture) {
+                        request.transitOptions = {departureTime: departureOrArrivalTime};
+                    } else if (isDeparture === false) {
+                        request.transitOptions = {arrivalTime: departureOrArrivalTime};
+                    }
+                }
 
-            console.log("calculating new route");
-            if (typeof analytics !== 'undefined') {
-                console.log("<-- tracking Event calcRoute");
-                analytics.trackEvent('System-Captured', 'Route', 'New Calculation', 1);
+                $ionicLoading.show({
+                    template: 'Route wird berechnet...'
+                });
+                console.log("calculating new route");
+                if (typeof analytics !== 'undefined') {
+                    console.log("<-- tracking Event calcRoute");
+                    analytics.trackEvent('System-Captured', 'Route', 'New Calculation', 1);
+                }
+                directionsService.route(request, function (response, status) {
+                    if (status === google.maps.DirectionsStatus.OK) {
+                        originMarker.setVisible(true);
+
+                        directionsDisplay.setDirections(response);
+                        //console.log(JSON.stringify(response), "directionsService.route <-- response");
+                        $scope.routeCalculated = true;
+                        notifyAfterRouteCaclulation();
+
+                        //var titleText = 'Route';
+                        //if (response.hasOwnProperty('routes')) {
+                        //    var nRoutes = response.routes.length;
+                        //    if (nRoutes > 1) {
+                        //        titleText = nRoutes + ' ' + titleText + 'n';
+                        //    } else if (nRoutes === 1) {
+                        //        titleText = nRoutes + ' ' + titleText;
+
+                        //    }
+                        //}
+                        if (mapCanvasDiv && mapWrapperDiv && scrollDiv) {
+                            angular.element(mapCanvasDiv).addClass('second-stage');
+                            angular.element(mapWrapperDiv).addClass('second-stage');
+                            angular.element(scrollDiv).addClass('second-stage');
+                            google.maps.event.trigger(map, 'resize');
+
+                        }
+
+                        findBusLines(response);
+                    }
+                    else {
+                        console.log(status, response, "<-- directionsService.route status response");
+                        if (status === 'ZERO_RESULTS') {
+                            $ionicNavBarDelegate.title('Leider keine Route gefunden...');
+                        }
+                        if (mapCanvasDiv && mapWrapperDiv && scrollDiv) {
+                            angular.element(mapCanvasDiv).removeClass('second-stage');
+                            angular.element(mapWrapperDiv).removeClass('second-stage');
+                            angular.element(scrollDiv).removeClass('second-stage');
+                            google.maps.event.trigger(map, 'resize');
+                        }
+
+                    }
+                    $ionicLoading.hide();
+
+                });
             }
-
-            $ionicLoading.show({
-                template: 'Route wird berechnet...'
-            });
-            var request = {
-                origin: originMarker.getPosition(),
-                destination: destinationMarker.getPosition(),
-                travelMode: google.maps.TravelMode.TRANSIT,
-                provideRouteAlternatives: true
-            };
-            if (departureOrArrivalTime) {
-                if (isDeparture) {
-                    request.transitOptions = {departureTime: departureOrArrivalTime};
-                } else if (isDeparture === false) {
-                    request.transitOptions = {arrivalTime: departureOrArrivalTime};
-                }
-            }
-            directionsService.route(request, function (response, status) {
-                if (status === google.maps.DirectionsStatus.OK) {
-                    originMarker.setVisible(true);
-
-                    directionsDisplay.setDirections(response);
-                    //console.log(response, "directionsService.route <-- response");
-                    $scope.routeCalculated = true;
-                    //var titleText = 'Route';
-                    //if (response.hasOwnProperty('routes')) {
-                    //    var nRoutes = response.routes.length;
-                    //    if (nRoutes > 1) {
-                    //        titleText = nRoutes + ' ' + titleText + 'n';
-                    //    } else if (nRoutes === 1) {
-                    //        titleText = nRoutes + ' ' + titleText;
-                    //    }
-                    //}
-                    if (mapCanvasDiv && mapWrapperDiv && scrollDiv) {
-                        angular.element(mapCanvasDiv).addClass('second-stage');
-                        angular.element(mapWrapperDiv).addClass('second-stage');
-                        angular.element(scrollDiv).addClass('second-stage');
-                        google.maps.event.trigger(map, 'resize');
-
-                    }
-
-                    findBusLines(response);
-                }
-                else {
-                    console.log(status, response, "<-- directionsService.route status response");
-                    if (status === 'ZERO_RESULTS') {
-                        $ionicNavBarDelegate.title('Leider keine Route gefunden...');
-                    }
-                    if (mapCanvasDiv && mapWrapperDiv && scrollDiv) {
-                        angular.element(mapCanvasDiv).removeClass('second-stage');
-                        angular.element(mapWrapperDiv).removeClass('second-stage');
-                        angular.element(scrollDiv).removeClass('second-stage');
-                        google.maps.event.trigger(map, 'resize');
-                    }
-
-                }
-                $ionicLoading.hide();
-
-            });
+        } else {
+            notifyOffline();
+            $scope.routeCalculated = false;
         }
 
     };
@@ -224,18 +266,46 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
     bb.ax = 51.459781;
     bb.ay = 10.128727;
     function isInsideOfGoettingenBounds(lat, lng) {
-        return (
-            lat <= bb.ix &&
-            lat >= bb.ax &&
-            lng >= bb.iy &&
-            lng <= bb.ay
-        );
+        if (lat === -1000 && lng === -1000) {
+            $cordovaToast.show('Ihre aktuelle Position konnte nicht ermittelt werden. Bitte geben Sie die Berechtigung zur Nutzung der Ortungsdienste für diese App frei.', 'long', 'top');
+            return false;
+        }
+
+
+        var check = (lat <= bb.ix &&
+        lat >= bb.ax &&
+        lng >= bb.iy &&
+        lng <= bb.ay);
+
+        if (!check) {
+            $cordovaToast.show('Ihre aktuelle Position scheint ausserhalb von Göttingen zu liegen. Wir haben für Sie das Gänseliesel als Startort gewählt.', 'long', 'top');
+        }
+        return check;
+    }
+
+    function notifyOffline() {
+        $cordovaToast.show('Bitte stellen Sie eine Internetverbindung her.', 'long', 'bottom');
+    }
+
+    function notifyAfterRouteCaclulation() {
+        $cordovaToast.showShortBottom('Start- und Ziel lassen sich noch durch verschieben oder gedrückt halten ändern');
     }
 
     ionic.Platform.ready(function () {
         //$ionicLoading.show({
         //    template: 'Karte wird initialisiert...'
         //});
+
+        // listen for Offline event
+        $rootScope.$on('$cordovaNetwork:offline', function (event, networkState) {
+            notifyOffline();
+        });
+        // listen for Online event
+        $rootScope.$on('$cordovaNetwork:online', function (event, networkState) {
+            if (originMarker && destinationMarker && $scope.routeCalculated === false) {
+                $scope.calcRoute();
+            }
+        });
 
         initializeMap();
         //console.log(JSON.stringify(stops_fixtures), "<-- stops_fixtures");
@@ -299,7 +369,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
         });
 
         var clickMapEventHandler = google.maps.event.addListener(map, 'click', function (event) {
-            placeMarker(event.latLng.lat(), event.latLng.lng());
+            setDestinationMarker(event.latLng.lat(), event.latLng.lng());
             google.maps.event.removeListener(clickMapEventHandler);
 
         });
@@ -324,13 +394,19 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
 
         $scope.map = map;
 
+        holdOverlay = new google.maps.OverlayView();
+        holdOverlay.draw = function () {
+        }; // empty function required
+        holdOverlay.setMap(map);
+        mapCanvasDivTop = mapCanvasDiv.getBoundingClientRect().top;
+
         $ionicLoading.hide();
         $ionicNavBarDelegate.align('left');
         $ionicNavBarDelegate.title("Tippen Sie bitte zu Ihrem Zielstandort");
 
     }
 
-    function placeMarker(lat, lng) {
+    function setDestinationMarker(lat, lng) {
         if (!destinationMarker) {
             var myDestinationMarkerIcon = {
                 url: 'img/destination.png',
@@ -353,6 +429,32 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
             });
         } else {
             destinationMarker.setPosition(new google.maps.LatLng(lat, lng));
+        }
+        $scope.calcRoute();
+    }
+
+    function setOriginMarker(lat, lng) {
+        if (!originMarker) {
+            var myOriginMarkerIcon = {
+                url: 'img/origin.png',
+                size: new google.maps.Size(44, 80), // the orignal size
+                origin: new google.maps.Point(0, 0),
+                anchor: new google.maps.Point(11, 40),
+                scaledSize: new google.maps.Size(22, 40) // the new size you want to use
+            };
+            originMarker = new google.maps.Marker({
+                position: new google.maps.LatLng(lat, lng),
+                map: map,
+                draggable: true,
+                zIndex: 100,
+                icon: myOriginMarkerIcon,
+                visible: false
+            });
+            google.maps.event.addListener(originMarker, 'dragend', function () {
+                $scope.calcRoute();
+            });
+        } else {
+            originMarker.setPosition(new google.maps.LatLng(lat, lng));
         }
         $scope.calcRoute();
     }
@@ -404,7 +506,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
                 setUserLocationMarker(lat, long);
             }, function (error) {
                 console.error('Error w/ getCurrentPosition: ' + JSON.stringify(error));
-                setUserLocationMarker(0, 0);
+                setUserLocationMarker(-1000, -1000);
             });
 
         if (!$scope.watchPositionID) {
@@ -429,6 +531,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
         if (!userLocationMarker) {
             var userLocationIconPath = "img/user-location.png";
             if (!isInsideOfGoettingenBounds(lat, lng)) {
+
                 userLocationIconPath = "img/user-location-gray.png";
                 // Set it to Gaenseliesl
                 lat = '51.5326892';
@@ -446,46 +549,17 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
             userLocationMarker = new google.maps.Marker({
                 position: new google.maps.LatLng(lat, lng),
                 map: map,
+                animation: google.maps.Animation.DROP,
                 draggable: false,
                 icon: userLocationIcon
             });
             map.setCenter(userLocationMarker.position);
 
-            //when the map zoom changes,
-            // resize the icon based on the zoom level
-            // so the marker covers the same geographic area
-            //google.maps.event.addListener(map, 'zoom_changed', function () {
-            //    var minPixelSize = 36; //the size of the icon at zoom level 0
-            //    var maxPixelSize = 150; //restricts the maximum size of the icon, otherwise the browser will choke at higher zoom levels trying to scale an image to millions of pixels
-            //
-            //    var zoom = map.getZoom();
-            //    var relativePixelSize = Math.round(Math.pow(1.3, zoom)); // use 2 to the power
-            //    // of current zoom to calculate relative pixel size.  Base of exponent is 2 because relative size should double every time you zoom in
-            //
-            //    //restrict the maximum size of the icon
-            //    if (relativePixelSize > maxPixelSize) {
-            //        relativePixelSize = maxPixelSize;
-            //    }
-            //    if (relativePixelSize < minPixelSize) {
-            //        relativePixelSize = minPixelSize;
-            //    }
-            //
-            //    //change the size of the icon
-            //    userLocationMarker.setIcon(
-            //        new google.maps.MarkerImage(
-            //            userLocationMarker.getIcon().url, //marker's same icon graphic
-            //            null,
-            //            new google.maps.Point(0, 0),
-            //            new google.maps.Point(relativePixelSize / 2, relativePixelSize / 2),
-            //            new google.maps.Size(relativePixelSize, relativePixelSize) //changes the scale
-            //        )
-            //    );
-            //
-            //});
         } else {
             if (userLocationMarker.getPosition().lat() !== lat || userLocationMarker.getPosition().lng() !== lng) {
                 var userLocationIconPathWatch = "img/user-location.png";
                 if (!isInsideOfGoettingenBounds(lat, lng)) {
+
                     userLocationIconPathWatch = "img/user-location-gray.png";
 
                     // Set it to Gaenseliesl
@@ -503,32 +577,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
             }
 
         }
-        if (!originMarker) {
-            var myOriginMarkerIcon = {
-                url: 'img/origin.png',
-                size: new google.maps.Size(44, 80), // the orignal size
-                origin: new google.maps.Point(0, 0),
-                anchor: new google.maps.Point(11, 40),
-                scaledSize: new google.maps.Size(22, 40) // the new size you want to use
-            };
-            originMarker = new google.maps.Marker({
-                position: new google.maps.LatLng(lat, lng),
-                map: map,
-                draggable: true,
-                zIndex: 100,
-                icon: myOriginMarkerIcon,
-                visible: false
-            });
-            google.maps.event.addListener(originMarker, 'dragend', function () {
-                //alert('originMarker dragged');
-                $scope.calcRoute();
-            });
-            // falls destinationMarker schon gesetzt ist...
-            if (destinationMarker) {
-                $scope.calcRoute();
-            }
-
-        }
+        setOriginMarker(lat, lng);
     }
 
     function CurrentLocation(controlDiv, map) {
@@ -625,7 +674,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
     $scope.updateBusMarker = function (cb) {
 
         busRadar.getLivePositionsForBusLines(currentBusLines, function () {
-                if (busRadar.titleText){
+                if (busRadar.titleText) {
                     var titleText = busRadar.titleText;
                     //console.log(busRadar.titleText, "<-- busRadar.titleText");
                     $ionicNavBarDelegate.title(titleText);
@@ -635,8 +684,6 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
                         live_bus_bounds = new google.maps.LatLngBounds();
                         live_bus_bounds.extend(destinationMarker.getPosition());
                         live_bus_bounds.extend(originMarker.getPosition());
-
-
 
                         touched_live_bus_bounds = false;
                         for (var i = 0, len = busRadar.routes.length; i < len; i++) {
@@ -651,8 +698,9 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($scope, $htt
                                 var routePath = new google.maps.Polyline({
                                     path: polylinePoints,
                                     strokeColor: currentBusRoute.color,
-                                    strokeOpacity: 0.6,
+                                    strokeOpacity: 0.7,
                                     strokeWeight: 2
+
                                 });
                                 routePath.setMap(map);
                                 routePaths.push(routePath);

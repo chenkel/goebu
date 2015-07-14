@@ -2679,8 +2679,8 @@ fixtures.routes[92].color = '#8653D9';
 
 module.exports = {
     returnRouteCoords: function (route, direction_id) {
-        global.log.debug("route, direction_id", route, direction_id);
-        global.log.debug("fixtures.routes[1][1]", fixtures.routes[1][1]);
+        //global.log.debug("route, direction_id", route, direction_id);
+        //global.log.debug("fixtures.routes[1][1]", fixtures.routes[1][1]);
         return fixtures.routes[route][direction_id];
     },
     returnRouteColor: function(route){
