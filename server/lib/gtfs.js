@@ -959,8 +959,8 @@ function filterStopSequences(goebu_params, cb) {
 
                 //console.log(minSequence, maxSequence, "<-- minSequence, maxSequence");
 
-                maxSequence = maxSequence + 2;
-                minSequence = minSequence - 20;
+                maxSequence = maxSequence + 4;
+                minSequence = minSequence - 25;
 
                 var cleanedStopTimes = [];
                 if (route.stop_times) {

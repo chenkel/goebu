@@ -113,25 +113,25 @@ $map-list-ratio : 0.90;
 
 // hide google maps stuff
 
-//#map_canvas > .gm-style > div:nth-child(2) {
-//  display: none !important;
-//}
-//
-//#map_canvas > .gm-style > .gmnoprint {
-//  display: none !important;
-//}
-//
-//#map_canvas > .gm-style > .gmnoscreen {
-//  display: none !important;
-//}
-//
-//#map_canvas > .gm-style > .gm-style-cc {
-//  display: none !important;
-//}
-//
-//.view-link, .gm-rev, .gm-phone, .gm-website {
-//  display: none !important;
-//}
+#map_canvas > .gm-style > div:nth-child(2) {
+  display: none !important;
+}
+
+#map_canvas > .gm-style > .gmnoprint {
+  display: none !important;
+}
+
+#map_canvas > .gm-style > .gmnoscreen {
+  display: none !important;
+}
+
+#map_canvas > .gm-style > .gm-style-cc {
+  display: none !important;
+}
+
+.view-link, .gm-rev, .gm-phone, .gm-website {
+  display: none !important;
+}
 
 [jsdisplay*="transit.line && transit.line.agencies"] {
   display: none;
