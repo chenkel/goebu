@@ -17,6 +17,7 @@
     "mongodb": "*",
     "mongoose": "^4.0.1",
     "morgan": "*",
+    "newrelic": "^1.21.1",
     "request": "*",
     "serve-favicon": "*",
     "underscore": "*",

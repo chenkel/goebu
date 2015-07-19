@@ -1,7 +1,6 @@
 "use strict";
-var host = "http://127.0.0.1:3000/";
-
-//var host = "http://goebu.christopherhenkel.de:3000/";
+//var host = "http://127.0.0.1:3000/";
+var host = "http://goebu.christopherhenkel.de:3000/";
 
 angular.module("goebu.services")
     .factory('busRadar', function ($http) {
@@ -129,8 +128,6 @@ angular.module("goebu.services")
                                         end: currentDistinctSequenceStart,
                                         stalled: true
                                     });
-                                } else {
-                                    //console.log(route, "<-- No end sequence found");
                                 }
                             }
                         }
@@ -138,8 +135,6 @@ angular.module("goebu.services")
 
                     if (route.distinctSequences) {
                         addLatLngToDistinctSequences(route);
-                    } else {
-                        //console.log("<-- No distinct sequences for Route: ", route);
                     }
 
                     if (route.distinctSequences) {

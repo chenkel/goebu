@@ -1,6 +1,6 @@
 {
   "name": "ionic-service-analytics",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "homepage": "http://ionic.io",
   "authors": [
     "Max Lynch <max@ionicframework.com>"
@@ -19,11 +19,11 @@
     "ionic-service-core": ">=0.1.7"
   },
   "devDependencies": {},
-  "_release": "0.1.2",
+  "_release": "0.2.0",
   "_resolution": {
     "type": "version",
-    "tag": "v0.1.2",
-    "commit": "6e956c93230cb6506537c021ebb583da2980fc58"
+    "tag": "v0.2.0",
+    "commit": "4a15d647a555cfa4ec189a3fd2b02d85771228a1"
   },
   "_source": "git://github.com/driftyco/ionic-service-analytics.git",
   "_target": "*",

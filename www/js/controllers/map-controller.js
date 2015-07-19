@@ -278,7 +278,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         lng <= bb.ay);
 
         if (!check) {
-            $cordovaToast.show('Ihre aktuelle Position scheint ausserhalb von Göttingen zu liegen. Wir haben für Sie das Gänseliesel als Startort gewählt.', 'long', 'top');
+            $cordovaToast.show('Ihre aktuelle Position scheint ausserhalb von Göttingen zu liegen. Wir haben für Sie das Gänseliesel als Start gewählt.', 'long', 'top');
         }
         return check;
     }
@@ -497,6 +497,10 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
     };
 
     function getCurrentLocationStart() {
+        if (userLocationMarker){
+            userLocationMarker.setMap(null);
+            userLocationMarker = null;
+        }
 
         $cordovaGeolocation
             .getCurrentPosition(posOptions)
@@ -577,7 +581,10 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
             }
 
         }
-        setOriginMarker(lat, lng);
+        if (!originMarker){
+            setOriginMarker(lat, lng);
+        }
+
     }
 
     function CurrentLocation(controlDiv, map) {
@@ -598,7 +605,10 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         // Setup the click event listeners: simply set the map to
         // Chicago
         google.maps.event.addDomListener(controlUI, 'click', function () {
-            map.setCenter(userLocationMarker.position);
+            if ($scope.watchPositionID){
+                $scope.watchPositionID.clearWatch();
+            }
+            getCurrentLocationStart();
         });
 
     }

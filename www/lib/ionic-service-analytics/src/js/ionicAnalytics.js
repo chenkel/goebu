@@ -1,5 +1,7 @@
 angular.module('ionic.service.analytics', ['ionic.service.core'])
 
+.value('VERSION_NUMBER', '0.2.0')
+
 /**
  * @ngdoc service
  * @name $ionicAnalytics
@@ -8,7 +10,7 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
  *
  * A simple yet powerful analytics tracking system.
  *
- * The simple format is eventName, eventData. Both are arbitrary but the eventName
+ * The simple format is eventCollection, eventData. Both are arbitrary but the eventCollection
  * should be the same as previous events if you wish to query on them later.
  *
  * @usage
@@ -22,25 +24,17 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
 .provider('$ionicAnalytics', function() {
 
   this.$get = [
-    '$q', 
-    '$timeout', 
-    '$state', 
-    '$ionicApp', 
-    '$ionicUser', 
+    '$q',
+    '$timeout',
+    '$rootScope',
+    '$ionicApp',
+    '$ionicUser',
     '$interval',
-    '$http', 
+    '$http',
     'persistentStorage',
-  function($q, $timeout, $state, $ionicApp, $ionicUser, $interval, $http, persistentStorage) {
+  function($q, $timeout, $rootScope, $ionicApp, $ionicUser, $interval, $http, persistentStorage) {
 
     var options = {};
-
-    function log(message) {
-      if (options.silent) {
-        return;
-      }
-
-      console.log.apply(console, arguments);
-    }
 
     var api = {
       getAppId: function() {
@@ -175,7 +169,7 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
       }).then(function(data) {
 
         // Success from proxy server. Erase event queue.
-        log('sent events', eventQueue);
+        console.log('Ionic Analytics: sent events', eventQueue);
         cache.set('event_queue', {});
 
       }, function(err) {
@@ -204,11 +198,11 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
 
     function enqueueEvent(collectionName, eventData) {
       if (options.dryRun) {
-        log('event recieved but not sent (dryRun active):', collectionName, eventData);
+        console.log('Ionic Analytics: event recieved but not sent (dryRun active):', collectionName, eventData);
         return;
-      } 
+      }
 
-      log('enqueuing event to send later:', collectionName, eventData);
+      console.log('Ionic Analytics: enqueuing event to send later:', collectionName, eventData);
 
       // Add timestamp property to the data
       if (!eventData.keen) {
@@ -249,6 +243,8 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
       return dispatchIntervalTime;
     }
 
+    var globalProperties = {};
+    var globalPropertiesFns = [];
 
     return {
 
@@ -263,7 +259,7 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
 
         options = optionsParam || {};
         if (options.dryRun) {
-          log('dryRun mode is active. Analytics will not send any events.')
+          console.log('Ionic Analytics: dryRun mode is active. Analytics will not send any events.')
         }
 
         // Request Analytics key from server.
@@ -292,9 +288,7 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
 
         var self = this;
         promise.then(function() {
-          log('successfully registered analytics key');
-
-          self.track('load');
+          console.log('Ionic Analytics: successfully registered analytics key');
 
           setDispatchInterval(30);
           $timeout(function() {
@@ -304,13 +298,45 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
 
         return promise;
       },
+      unsetGlobalProperty: function(prop) {
+        if (typeof prop === 'string') {
+          delete globalProperties[prop];
+        }
+        else if (typeof prop === 'function') {
+          var i = globalPropertiesFns.indexOf(prop);
+          if (i == -1) {
+            throw Error('Ionic Analytics: The function passed to unsetGlobalProperty was not a global property.');
+          }
+          globalPropertiesFns.splice(i, 1);
+        }
+        else {
+          throw Error('Ionic Analytics: unsetGlobalProperty parameter must be a string or function.');
+        }
+      },
+      setGlobalProperties: function(prop) {
+        if (typeof prop === 'object') {
+          for (var key in prop) {
+            if (!prop.hasOwnProperty(key)) {
+              continue;
+            }
+
+            globalProperties[key] = prop[key];
+          }
+        }
+        else if (typeof prop === 'function') {
+          globalPropertiesFns.push(prop);
+        }
+        else {
+          throw Error('Ionic Analytics: setGlobalProperties parameter must be an object or function.');
+        }
+      },
       setDispatchInterval: function(v) {
         return setDispatchInterval(v);
       },
       getDispatchInterval: function() {
         return getDispatchInterval();
       },
-      track: function(eventName, data) {
+      track: function(eventCollection, eventData) {
 
         if (!api.getAppId() || !api.getApiKey()) {
           var msg = 'You must provide an app id and api key to identify your app before tracking analytics data.\n    ' +
@@ -318,69 +344,133 @@ angular.module('ionic.service.analytics', ['ionic.service.core'])
           throw new Error(msg)
         }
 
-        if (!data) data = {};
-        data._app = {
-          app_id: api.getAppId()
-        };
-        data._user = angular.copy($ionicUser.get());
+        if (!eventData) eventData = {};
 
-        if (!data._ui) data._ui = {};
-        data._ui.active_state = $state.current.name;
+        for (var key in globalProperties) {
+          if (!globalProperties.hasOwnProperty(key)) {
+            continue;
+          }
+
+          if (eventData[key] === void 0) {
+            eventData[key] = globalProperties[key];
+          }
+        };
+
+        for (var i = 0; i < globalPropertiesFns.length; i++) {
+          var fn = globalPropertiesFns[i];
+          fn.call($rootScope, eventCollection, eventData);
+        };
 
         if (useEventCaching) {
-          enqueueEvent(eventName, data);
+          $timeout(function() {
+            enqueueEvent(eventCollection, eventData);
+          })
         } else {
-          if (options.dryRun) {
-            console.log('dryRun active, will not send event: ', eventName, data);
-          } else {
-            api.postEvent(eventName, data);            
-          }
+          $timeout(function() {
+            if (options.dryRun) {
+              console.log('Ionic Analytics: dryRun active, will not send event: ', eventCollection, eventData);
+            } else {
+              api.postEvent(eventCollection, eventData);
+            }
+          })
         }
       },
     };
   }];
 })
 
+//================================================================================
+// Global events
+//================================================================================
+
+.run([
+  '$ionicAnalytics',
+  '$ionicApp',
+  '$ionicUser',
+  'VERSION_NUMBER',
+function($ionicAnalytics, $ionicApp, $ionicUser, VERSION_NUMBER) {
+  $ionicAnalytics.setGlobalProperties(function(eventCollection, eventData) {
+
+    eventData._user = angular.copy($ionicUser.get());
+    eventData._app = {
+      app_id: $ionicApp.getApp().app_id,
+      analytics_version: VERSION_NUMBER
+    };
+
+  })
+}])
+
+.run(['$ionicAnalytics', '$state', function($ionicAnalytics, $state) {
+  $ionicAnalytics.setGlobalProperties(function(eventCollection, eventData) {
+
+    if (!eventData._ui) eventData._ui = {};
+    eventData._ui.active_state = $state.current.name;
+
+  });
+}])
+
+
+//================================================================================
+// Utils
+//================================================================================
 
 .factory('domSerializer', function() {
-  var getElementTreeXPath = function(element) {
-    // Calculate the XPath of a given element
-    var paths = [];
 
-    // Use nodeName (instead of localName) so namespace prefix is included (if any).
-    for (; element && element.nodeType == 1; element = element.parentNode)
-    {
-      var index = 0;
-      for (var sibling = element.previousSibling; sibling; sibling = sibling.previousSibling)
-      {
-        // Ignore document type declaration.
-        if (sibling.nodeType == Node.DOCUMENT_TYPE_NODE)
-          continue;
+  function elementFullCssPath(element) {
+    // iterate up the dom
+    var selectors = [];
+    while (element.tagName !== 'HTML') {
+      var selector = element.tagName.toLowerCase();
 
-        if (sibling.nodeName == element.nodeName)
-          ++index;
+      var id = element.getAttribute('id');
+      if (id) {
+        selector += "#" + id;
       }
 
-      var tagName = element.nodeName.toLowerCase();
-      var pathIndex = (index ? "[" + (index+1) + "]" : "");
-      paths.splice(0, 0, tagName + pathIndex);
+      var className = element.className;
+      if (className) {
+        var classes = className.split(' ');
+        for (var i = 0; i < classes.length; i++) {
+          var c = classes[i];
+          if (c) {
+            selector += '.' + c;
+          }
+        };
+      }
+
+      var childIndex = Array.prototype.indexOf.call(element.parentNode.children, element);
+      selector += ':nth-child(' + (childIndex + 1) + ')';
+
+      element = element.parentNode;
+      selectors.push(selector);
     }
 
-    return paths.length ? "/" + paths.join("/") : null;
+    return selectors.reverse().join('>');
+  }
+
+  function elementIdentifierOrId(element) {
+    // 1. ion-track-name directive
+    var name = element.getAttribute('ion-track-name');
+    if (name) {
+      return name;
+    }
+
+    // 2. id
+    var id = element.getAttribute('id');
+    if (id) {
+      return id;
+    }
+
+    // 3. no unique identifier --> return null
+    return null;
   }
 
   return {
-    serializeElement: function(element) {
-      // Code appropriated from open source project FireBug
-      if (element && element.id)
-        return '//*[@id="' + element.id + '"]';
-      else
-        return getElementTreeXPath(element);
+    elementSelector: function(element) {
+      return elementFullCssPath(element);
     },
-
-    deserializeElement: function(xpath, context) {
-      var searchResult = document.evaluate(xpath, context || document);
-      return searchResult.iterateNext();
+    elementName: function(element) {
+      return elementIdentifierOrId(element);
     }
   }
 })

@@ -1,102 +1,103 @@
 angular.module('ionic.service.analytics')
 
-/**
- * @ngdoc service
- * @name $ionicAutoTrack
- * @module ionic.service.analytics
- * @description
- *
- * Utility for auto tracking events. Every DOM event will go through a
- * list of hooks which extract meaningful data and add it to an event to Keen.
- *
- * Hooks should take a DOM event and return a dictionary of extracted properties, if any.
- *
- * @usage
- * ```javascript
- * $ionicAutoTrack.addHook(function(event) {
- *   if (event.type !== 'click') return;
- *
- *   return {
- *     my_extra_tracking_data: event.pageX
- *   };
- * });
- * ```
- */
-.factory('$ionicAutoTrack', ['domSerializer', function(domSerializer) {
+.provider('$ionicAutoTrack',[function(){
 
-  // Array of handlers that events will filter through.
-  var hooks = [];
+  var trackersDisabled = {},
+      allTrackersDisabled = false;
 
-  // Add a few handlers to start off our hooks
-  // Handler for general click events
-  hooks.push(function(event) {
+  this.disableTracking = function(tracker) {
+    if (tracker) {
+     trackersDisabled[tracker] = true;
+    } else {
+      allTrackersDisabled = true;
+    }
+  }
 
-    if (event.type !== 'click') return;
+  this.$get = [function() {
+    return {
+      isEnabled: function(tracker) {
+        return !allTrackersDisabled && !trackersDisabled[tracker];
+      }
+    }
+  }]
+}])
 
-    // We want to also include coordinates as a percentage relative to the target element
-    var x = event.pageX,
-        y = event.pageY,
-        box = event.target.getBoundingClientRect(),
+
+//================================================================================
+// Auto trackers
+//================================================================================
+
+
+.run(['$ionicAutoTrack', '$ionicAnalytics', function($ionicAutoTrack, $ionicAnalytics) {
+  if (!$ionicAutoTrack.isEnabled('Load')) {
+    return;
+  }
+  $ionicAnalytics.track('Load');    
+}])
+
+.run([
+  '$ionicAutoTrack',
+  '$document',
+  '$ionicAnalytics',
+  'domSerializer',
+function($ionicAutoTrack, $document, $ionicAnalytics, domSerializer) {
+  if (!$ionicAutoTrack.isEnabled('Tap')) {
+    return;
+  }
+
+  $document.on('click', function(event) {
+    // want coordinates as a percentage relative to the target element
+    var box = event.target.getBoundingClientRect(),
         width = box.right - box.left,
         height = box.bottom - box.top,
-        normX = (x - box.left) / width,
-        normY = (y - box.top) / height;
+        normX = (event.pageX - box.left) / width,
+        normY = (event.pageY - box.top) / height;
 
-    // Now get an xpath reference to the target element
-    var elementSerialized = domSerializer.serializeElement(event.target);
-
-    var tapData = {
-      coords: {
-        x: x,
-        y: y
+    var eventData = {
+      coordinates: {
+        x: event.pageX,
+        y: event.pageY
       },
-      element: elementSerialized
+      target: domSerializer.elementSelector(event.target),
+      target_identifier: domSerializer.elementName(event.target)
     };
 
     if (isFinite(normX) && isFinite(normY)) {
-      tapData.coords.x_norm = normX;
-      tapData.coords.y_norm = normY;
+      eventData.coordinates.x_norm = normX;
+      eventData.coordinates.y_norm = normY;
     }
 
-    return tapData;
+    $ionicAnalytics.track('Tap', {
+      _ui: eventData
+    });
+
   });
-
-  // TODO fix handler for tab-item clicks
-  // hooks.push(function(event) {
-  //   if (event.type !== 'click') return;
-
-  //   var item = ionic.DomUtil.getParentWithClass(event.target, 'tab-item', 3);
-  //   if(!item) {
-  //     return;
-  //   }
-  // });
-
-  return {
-    addHook: function(hook) {
-      hooks.push(hook);
-    },
-
-    runHooks: function(domEvent) {
-
-      // Event we'll actually send for analytics
-      var trackingEvent;
-
-      // Run the event through each hook
-      for (var i = 0; i < hooks.length; i++) {
-        var hookResponse = hooks[i](domEvent);
-        if (hookResponse) {
-
-          // Append the hook response to our tracking data
-          if (!trackingEvent) trackingEvent = {};
-          trackingEvent = angular.extend(trackingEvent, hookResponse);
-        }
-      }
-
-      return trackingEvent;
-    }
-  };
 }])
 
+.run([
+  '$ionicAutoTrack',
+  '$ionicAnalytics',
+  '$rootScope',
+function($ionicAutoTrack, $ionicAnalytics, $rootScope) {
+  if (!$ionicAutoTrack.isEnabled('State Change')) {
+    return;
+  }
+
+  $rootScope.$on('$stateChangeSuccess', 
+    function(event, toState, toParams, fromState, fromParams) 
+  {
+    $ionicAnalytics.track('State Change', {
+      from: fromState.name,
+      to: toState.name
+    })
+  });
+
+}])
+
+
+//================================================================================
+// ion-track-$EVENT
+//================================================================================
 
 /**
  * @ngdoc directive
@@ -136,45 +137,6 @@ angular.module('ionic.service.analytics')
 .directive('ionTrackPinchOut', ionTrackDirective('pinchout'))
 .directive('ionTrackRotate', ionTrackDirective('rotate'))
 
-
-/**
- * @ngdoc directive
- * @name ionTrackAuto
- * @module ionic.service.analytics
- * @restrict A
- * @parent ionic.directive:ionTrackAuto
- *
- * @description
- *
- * Automatically track events on UI elements. This directive tracks heuristics to automatically detect
- * taps and interactions on common built-in Ionic components.
- *
- * None: this element should be applied on the body tag.
- *
- * @usage
- * ```html
- * <body ion-track-auto></body>
- * ```
- */
-.directive('ionTrackAuto', ['$document', '$ionicAnalytics', '$ionicAutoTrack', function($document, $ionicAnalytics, $ionicAutoTrack) {
-  return {
-    restrict: 'A',
-    link: function($scope, $element, $attr) {
-
-      // Listen for events on the document body.
-      // In the future we can listen for all kinds of events.
-      $document.on('click', function(event) {
-        var uiData = $ionicAutoTrack.runHooks(event);
-        if (uiData) {
-          var trackingEvent = {
-            _ui: uiData
-          }
-          $ionicAnalytics.track('tap', trackingEvent);
-        }
-      });
-    }
-  }
-}]);
 
 /**
  * Generic directive to create auto event handling analytics directives like:

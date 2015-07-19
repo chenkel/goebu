@@ -38,9 +38,6 @@ angular.module('goebu', [
     .run(function ($ionicPlatform, $ionicUser, $ionicDeploy, $cordovaDialogs, $ionicLoading, $cordovaNetwork, $localstorage) {
         $ionicPlatform.ready(function () {
             navigator.splashscreen.hide();
-
-
-
             cordova.exec.setJsToNativeBridgeMode(cordova.exec.jsToNativeModes.XHR_NO_PAYLOAD);
             console.log("<-- setJSToNativeBridgeMode");
 
@@ -104,7 +101,7 @@ angular.module('goebu', [
 
                 //window.StatusBar.backgroundColorByHexString('#0F0F0F');
             }
-            //downloadAndInstallUpdate();
+            downloadAndInstallUpdate();
         });
 
         $ionicPlatform.on('resume', function () {
@@ -112,7 +109,7 @@ angular.module('goebu', [
                 console.log("<-- tracking Event resume app");
                 analytics.trackEvent('System-Captured', 'App', 'Resumed', 1);
             }
-            //downloadAndInstallUpdate();
+            downloadAndInstallUpdate();
         });
 
         function downloadAndInstallUpdate() {
