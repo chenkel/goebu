@@ -139,8 +139,9 @@ function findServices(goebu_params, cb) {
             return cb(e, null);
         } else {
             if (calendar_date_ids.length > 0) {
-                goebu_params.service_ids = calendar_date_ids;
+                goebu_params.service_ids = goebu_params.service_ids.concat(calendar_date_ids);
             }
+            global.log.debug("goebu_params.service_ids", goebu_params.service_ids);
 
             return cb(null, goebu_params);
         }
@@ -309,7 +310,7 @@ function findStopsWithStopDescInRoutes(goebu_params, cb) {
                 cb(err, null);
             } else {
                 global.log.trace("All routes have been successfully processed.");
-                //global.log.debug("goebu_params", JSON.stringify(goebu_params));
+                global.log.debug("goebu_params", JSON.stringify(goebu_params));
                 cb(null, goebu_params);
             }
         }
