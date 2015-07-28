@@ -16,6 +16,7 @@ angular.module("goebu.services")
         busRadar.nextUpdate = moment();
 
         function timeToSeconds(time) {
+            // TODO: GTFS data from GoeVB only uses seconds from midnight in Germnay/Berlin Time
             var timeParts;
             if (time instanceof Date) {
                 timeParts = [time.getHours(), time.getMinutes(), time.getSeconds()];
@@ -65,6 +66,7 @@ angular.module("goebu.services")
             var nowInSeconds = timeToSeconds(now);
             busRadar.routes = goebu_params.routes;
             goebu_params.live_positions = [];
+            busRadar.active_bus_counter = 0;
             async.each(goebu_params.routes, function (route, eachCallback) {
                 if (route.stop_times && route.stop_times.length > 0) {
                     route.distinctSequences = [];
@@ -91,6 +93,7 @@ angular.module("goebu.services")
 
                             distinctSequencesStart.push(route.stop_times[j]);
                             //    es gibt nur 2 Routen gleichzeitig, also kann man abbrechen
+
                             break;
                         }
                     }
@@ -109,6 +112,8 @@ angular.module("goebu.services")
                                         start: currentDistinctSequenceStart,
                                         end: route.stop_times[l]
                                     });
+                                    busRadar.active_bus_counter++;
+
                                     endSequenceFound = true;
                                     //console.log(route, "<-- End sequence found");
                                     break;
@@ -120,6 +125,7 @@ angular.module("goebu.services")
                                     });
                                 }
                             }
+
                             if (endSequenceFound === false) {
 
                                 if (currentDistinctSequenceStart.stop_sequence === 0) {

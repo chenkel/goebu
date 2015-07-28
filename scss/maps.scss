@@ -34,16 +34,28 @@ $map-list-ratio : 0.90;
     position: relative;
     //height: auto;
 
-    @media screen and (max-height: 480px) {
-      padding-bottom: mapPaddingBottom(480);
+    //@media screen and (max-height: 480px) {
+    //  padding-bottom: mapPaddingBottom(440);
+    //}
+    @media screen and (min-height: 320px) {
+      //padding-bottom: 350px;
+      padding-bottom: mapPaddingBottom(250);
     }
     @media screen and (min-height: 480px) {
       //padding-bottom: 350px;
-      padding-bottom: mapPaddingBottom(480);
+      padding-bottom: mapPaddingBottom(410);
     }
     @media screen and (min-height: 560px) {
       //padding-bottom: 470px;
-      padding-bottom: mapPaddingBottom(560);
+      padding-bottom: mapPaddingBottom(500);
+    }
+    @media screen and (min-height: 660px) {
+      //padding-bottom: 470px;
+      padding-bottom: mapPaddingBottom(580);
+    }
+    @media screen and (min-height: 730px) {
+      //padding-bottom: 720px;
+      padding-bottom: mapPaddingBottom(640);
     }
     @media screen and (min-height: 800px) {
       //padding-bottom: 720px;

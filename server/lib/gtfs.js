@@ -792,7 +792,7 @@ function findStopTimesWithTripsAndTimeHorizon(goebu_params, cb) {
 }
 
 function attachStopsFromStopIdsForRoutes(goebu_params, cb) {
-    goebu_params.titleText = 'Route wurde berechnet.';
+    //goebu_params.titleText = 'Route wurde berechnet.';
     async.each(goebu_params.routes, function (route, eachCallback) {
         if (route.stop_ids && route.stop_ids.length > 0) {
             // TODO: fix so dass aktuelle Trips gezeigt werden

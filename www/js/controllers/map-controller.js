@@ -271,7 +271,6 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
             return false;
         }
 
-
         var check = (lat <= bb.ix &&
         lat >= bb.ax &&
         lng >= bb.iy &&
@@ -402,7 +401,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
 
         $ionicLoading.hide();
         $ionicNavBarDelegate.align('left');
-        $ionicNavBarDelegate.title("Tippen Sie bitte zu Ihrem Zielstandort");
+        $ionicNavBarDelegate.title("Wählen Sie Ihr Ziel");
 
     }
 
@@ -497,7 +496,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
     };
 
     function getCurrentLocationStart() {
-        if (userLocationMarker){
+        if (userLocationMarker) {
             userLocationMarker.setMap(null);
             userLocationMarker = null;
         }
@@ -581,7 +580,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
             }
 
         }
-        if (!originMarker){
+        if (!originMarker) {
             setOriginMarker(lat, lng);
         }
 
@@ -605,7 +604,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         // Setup the click event listeners: simply set the map to
         // Chicago
         google.maps.event.addDomListener(controlUI, 'click', function () {
-            if ($scope.watchPositionID){
+            if ($scope.watchPositionID) {
                 $scope.watchPositionID.clearWatch();
             }
             getCurrentLocationStart();
@@ -669,10 +668,12 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                 }
                 currentBusLines = make_array_unique(currentBusLines);
                 liveBusPositions = clear_markers(liveBusPositions);
-                $ionicNavBarDelegate.title('Route wurde berechnet.');
+
                 if (currentBusLines.length > 0) {
+
                     restartLiveBusTimer();
                 } else {
+                    $ionicNavBarDelegate.title('Keine Busse gefunden');
                     stopLiveBusTimer();
                 }
             }
@@ -688,6 +689,13 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                     var titleText = busRadar.titleText;
                     //console.log(busRadar.titleText, "<-- busRadar.titleText");
                     $ionicNavBarDelegate.title(titleText);
+                } else {
+                    if (busRadar.active_bus_counter && busRadar.active_bus_counter > 0) {
+                        $ionicNavBarDelegate.title('Busradar aktiv');
+                    } else {
+
+                        $ionicNavBarDelegate.title('Keine Busse gefunden');
+                    }
                 }
                 if (busRadar.livePositions && busRadar.livePositions.length > 0) {
                     if (cb) {

@@ -7706,15 +7706,21 @@ a.button {
   height: 100%; }
   .map-wrapper.second-stage {
     position: relative; }
-    @media screen and (max-height: 480px) {
+    @media screen and (min-height: 320px) {
       .map-wrapper.second-stage {
-        padding-bottom: 432px; } }
+        padding-bottom: 225px; } }
     @media screen and (min-height: 480px) {
       .map-wrapper.second-stage {
-        padding-bottom: 432px; } }
+        padding-bottom: 369px; } }
     @media screen and (min-height: 560px) {
       .map-wrapper.second-stage {
-        padding-bottom: 504px; } }
+        padding-bottom: 450px; } }
+    @media screen and (min-height: 660px) {
+      .map-wrapper.second-stage {
+        padding-bottom: 522px; } }
+    @media screen and (min-height: 730px) {
+      .map-wrapper.second-stage {
+        padding-bottom: 576px; } }
     @media screen and (min-height: 800px) {
       .map-wrapper.second-stage {
         padding-bottom: 720px; } }
