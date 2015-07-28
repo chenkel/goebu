@@ -39,22 +39,23 @@ $map-list-ratio : 0.90;
     //}
     @media screen and (min-height: 320px) {
       //padding-bottom: 350px;
-      padding-bottom: mapPaddingBottom(250);
+      padding-bottom: mapPaddingBottom(240);
     }
     @media screen and (min-height: 480px) {
       //padding-bottom: 350px;
-      padding-bottom: mapPaddingBottom(410);
+      padding-bottom: mapPaddingBottom(400);
     }
     @media screen and (min-height: 560px) {
       //padding-bottom: 470px;
-      padding-bottom: mapPaddingBottom(500);
+      padding-bottom: mapPaddingBottom(490);
     }
     @media screen and (min-height: 660px) {
       //padding-bottom: 470px;
-      padding-bottom: mapPaddingBottom(580);
+      padding-bottom: mapPaddingBottom(570);
     }
     @media screen and (min-height: 730px) {
       //padding-bottom: 720px;
+
       padding-bottom: mapPaddingBottom(640);
     }
     @media screen and (min-height: 800px) {
@@ -124,6 +125,7 @@ $map-list-ratio : 0.90;
 }
 
 // hide google maps stuff
+
 
 #map_canvas > .gm-style > div:nth-child(2) {
   display: none !important;

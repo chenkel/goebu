@@ -119,12 +119,11 @@ module.exports = {
         var daysSince = duration.asDays();
 
         var surveyWeek = Math.floor(daysSince / 6);
-        if (surveyWeek > 3){
+        if (surveyWeek > 3) {
             surveyWeek = 3;
         }
         //console.log(group_id, "<-- group_id");
         //console.log(surveyWeek, "<-- surveyWeek");
-
 
         //var surveyPlan = {
         //    1: [0, 1, 2, 3],
@@ -140,8 +139,13 @@ module.exports = {
         //console.log(surveyPlan[group_id][surveyWeek], "<-- surveyPlan[group_id][surveyWeek]");
         //console.log(surveyQuestions[2], "<-- surveyQuestions");
 
-
-        cb(null, surveyQuestions[surveyPlan[group_id][surveyWeek]]);
+        var chosenSurvey = surveyQuestions[surveyPlan[group_id][surveyWeek]];
+        if (chosenSurvey){
+            chosenSurvey.disclaimer1 = "Die Umfrage wird im Rahmen eines Forschungsprojekts der Universität Göttingen durchgeführt.";
+            chosenSurvey.disclaimer2 = "Persönliche Daten werden weder abgefragt noch gespeichert.";
+            chosenSurvey.disclaimer3 = "Alle Angaben werden verschlüsselt und anonymisiert übertragen und in keinem Fall an Dritte weitergegeben.";
+        }
+            cb(null, chosenSurvey);
     }
 };
 

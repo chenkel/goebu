@@ -7708,16 +7708,16 @@ a.button {
     position: relative; }
     @media screen and (min-height: 320px) {
       .map-wrapper.second-stage {
-        padding-bottom: 225px; } }
+        padding-bottom: 216px; } }
     @media screen and (min-height: 480px) {
       .map-wrapper.second-stage {
-        padding-bottom: 369px; } }
+        padding-bottom: 360px; } }
     @media screen and (min-height: 560px) {
       .map-wrapper.second-stage {
-        padding-bottom: 450px; } }
+        padding-bottom: 441px; } }
     @media screen and (min-height: 660px) {
       .map-wrapper.second-stage {
-        padding-bottom: 522px; } }
+        padding-bottom: 513px; } }
     @media screen and (min-height: 730px) {
       .map-wrapper.second-stage {
         padding-bottom: 576px; } }
@@ -7909,3 +7909,6 @@ a.button {
   border-color: #111;
   background-color: #444444;
   color: #fff; }
+
+.disclaimer {
+  text-align: justify; }

@@ -5,6 +5,12 @@
 
     <!--<ion-scroll>-->
     <ion-content>
+        <div class="item item-text-wrap disclaimer">
+            <h4>{{surveyData.disclaimer1}}</h4>
+            <h4>{{surveyData.disclaimer2}}</h4>
+            <h4>{{surveyData.disclaimer3}}</h4>
+        </div>
+        <div class="padding"></div>
         <form name="surveyFormYo"
               novalidate
               ng-submit="submitSurvey">
@@ -41,6 +47,7 @@
             <!--class="icon ion-checkmark-circled"></i> abschicken</button>-->
             <!--<div class="padding"></div>-->
         </form>
+
     </ion-content>
     <!--</ion-scroll>-->
 

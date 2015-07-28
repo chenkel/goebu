@@ -673,7 +673,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
 
                     restartLiveBusTimer();
                 } else {
-                    $ionicNavBarDelegate.title('Keine Busse gefunden');
+                    $ionicNavBarDelegate.title('Route gefunden');
                     stopLiveBusTimer();
                 }
             }
@@ -694,7 +694,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                         $ionicNavBarDelegate.title('Busradar aktiv');
                     } else {
 
-                        $ionicNavBarDelegate.title('Keine Busse gefunden');
+                        $ionicNavBarDelegate.title('Route gefunden');
                     }
                 }
                 if (busRadar.livePositions && busRadar.livePositions.length > 0) {

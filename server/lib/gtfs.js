@@ -138,8 +138,8 @@ function findServices(goebu_params, cb) {
             global.log.warn("service_ids", service_ids);
             return cb(e, null);
         } else {
-            if (calendar_date_ids.length > 0) {
-                goebu_params.service_ids = goebu_params.service_ids.concat(calendar_date_ids);
+            if (calendar_date_ids.length > 0 && goebu_params.service_ids.length === 0) {
+                goebu_params.service_ids = calendar_date_ids;
             }
             global.log.debug("goebu_params.service_ids", goebu_params.service_ids);
 
@@ -260,6 +260,9 @@ function findStopsWithStopDescInRoutes(goebu_params, cb) {
                 } else if (route[arrivalOrDeparture].stop_name === 'Asklepios Fachklinik') {
                     route[arrivalOrDeparture].stop_ids = ['6331', '6332'];
                     parallelCallback(null, route[arrivalOrDeparture].stop_ids);
+                } else if (route[arrivalOrDeparture].stop_name === 'Göttingen-Geismar Hauptstraße') {
+                    route[arrivalOrDeparture].stop_ids = ['6061', '6062'];
+                    parallelCallback(null, route[arrivalOrDeparture].stop_ids);
                 } else {
                     Stop.aggregate({
                         $match: {
@@ -293,11 +296,11 @@ function findStopsWithStopDescInRoutes(goebu_params, cb) {
                     global.log.error("Error at findStopsWithStopDescInRoutes - async.parallel", err);
                     callback(err);
                 } else {
-                    if (results.arrival.length < 1 ) {
+                    if (results.arrival.length < 1) {
                         global.log.error(route.stop_arrival.stop_name, " - arrival information not found!!", results);
 
                     }
-                    if (results.departure.length < 1){
+                    if (results.departure.length < 1) {
                         global.log.error(route.stop_departure.stop_name, " - departure information not found!!", results);
                     }
 
