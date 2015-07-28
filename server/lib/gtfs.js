@@ -138,11 +138,11 @@ function findServices(goebu_params, cb) {
             global.log.warn("service_ids", service_ids);
             return cb(e, null);
         } else {
-            if (calendar_date_ids.length > 0 && goebu_params.service_ids.length === 0) {
-                goebu_params.service_ids = calendar_date_ids;
-            }
+            global.log.debug("calendar_date_ids", calendar_date_ids);
             global.log.debug("goebu_params.service_ids", goebu_params.service_ids);
-
+            //if (calendar_date_ids.length > 0) {
+            //    goebu_params.service_ids = calendar_date_ids;
+            //}
             return cb(null, goebu_params);
         }
     });
@@ -864,34 +864,38 @@ function generateBusLineShapes(goebu_params, cb) {
     // lookup stop ids and add lat lng
     function findRelatedStopSequences(currentLiveSequenceStart, route) {
         var foundStopIds = [];
-        foundStopIds.push(route.stop_times[currentLiveSequenceStart].stop_id);
-        var currentTrip = route.stop_times[currentLiveSequenceStart].trip_id;
+        if (route && route.stop_times[currentLiveSequenceStart] && route.stop_times[currentLiveSequenceStart].stop_id) {
+
+            foundStopIds.push(route.stop_times[currentLiveSequenceStart].stop_id);
+            var currentTrip = route.stop_times[currentLiveSequenceStart].trip_id;
 //    search ahead
-        var gapLimit = 5;
-        var gapCounter = 0;
-        var currentIndex = currentLiveSequenceStart + 1;
-        while (gapCounter < gapLimit) {
-            if (route.stop_times[currentIndex] && route.stop_times[currentIndex].trip_id === currentTrip) {
-                foundStopIds.push(route.stop_times[currentIndex].stop_id);
-                gapCounter = 0;
-            } else {
-                gapCounter++;
+            var gapLimit = 5;
+            var gapCounter = 0;
+            var currentIndex = currentLiveSequenceStart + 1;
+            while (gapCounter < gapLimit) {
+                if (route.stop_times[currentIndex] && route.stop_times[currentIndex].trip_id === currentTrip) {
+                    foundStopIds.push(route.stop_times[currentIndex].stop_id);
+                    gapCounter = 0;
+                } else {
+                    gapCounter++;
+                }
+                currentIndex++;
             }
-            currentIndex++;
-        }
-        // search backwards
-        currentIndex = currentLiveSequenceStart - 1;
-        gapCounter = 0;
-        while (gapCounter < gapLimit) {
-            if (route.stop_times[currentIndex] && route.stop_times[currentIndex].trip_id === currentTrip) {
-                foundStopIds.unshift(route.stop_times[currentIndex].stop_id);
-                gapCounter = 0;
-            } else {
-                gapCounter++;
+            // search backwards
+            currentIndex = currentLiveSequenceStart - 1;
+            gapCounter = 0;
+            while (gapCounter < gapLimit) {
+                if (route.stop_times[currentIndex] && route.stop_times[currentIndex].trip_id === currentTrip) {
+                    foundStopIds.unshift(route.stop_times[currentIndex].stop_id);
+                    gapCounter = 0;
+                } else {
+                    gapCounter++;
+                }
+                currentIndex--;
             }
-            currentIndex--;
         }
         return foundStopIds;
+
     }
 
     async.each(goebu_params.routes, function (route, eachCallback) {
