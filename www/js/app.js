@@ -22,7 +22,8 @@ angular.module('goebu', [
     'ionic.service.deploy',
     'goebu.directives',
     'goebu.controllers',
-    'goebu.services'
+    'goebu.services',
+    'ion-affix'
 ])
 
     .config(['$ionicAppProvider', function ($ionicAppProvider) {
@@ -91,7 +92,7 @@ angular.module('goebu', [
             // for form inputs)
             if (window.cordova && window.cordova.plugins.Keyboard) {
                 cordova.plugins.Keyboard.hideKeyboardAccessoryBar(false);
-                cordova.plugins.Keyboard.disableScroll(true);
+                cordova.plugins.Keyboard.disableScroll(false);
             }
 
             if (window.StatusBar) {

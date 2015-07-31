@@ -7739,7 +7739,7 @@ a.button {
 
 .currentLocationControl {
   padding-right: 10px;
-  padding-bottom: 10px;
+  padding-bottom: 64px;
   position: fixed !important;
   bottom: 0;
   left: initial !important;
@@ -7761,6 +7761,23 @@ a.button {
   line-height: 44px;
   padding-left: 5px;
   padding-right: 5px; }
+
+.customDirectionsControl {
+  padding-right: 10px;
+  padding-bottom: 10px;
+  position: fixed !important;
+  bottom: 0;
+  left: initial !important;
+  right: 0; }
+
+.customDirectionsControlUI {
+  background-color: rgba(255, 255, 255, 0.55);
+  border-radius: 34px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  text-align: center;
+  width: 44px;
+  height: 44px; }
 
 #map_canvas > .gm-style > div:nth-child(2) {
   display: none !important; }
@@ -7893,6 +7910,9 @@ a.button {
 .item .badge {
   position: initial; }
 
+.transparent {
+  background-color: transparent !important; }
+
 .survey.question {
   font-size: 100%;
   font-weight: 500;
@@ -7912,3 +7932,50 @@ a.button {
 
 .disclaimer {
   text-align: justify; }
+
+.slide-in-right {
+  -webkit-transform: translateX(100%);
+  transform: translateX(100%); }
+
+.slide-in-right.ng-enter, .slide-in-right > .ng-enter {
+  -webkit-transition: all cubic-bezier(0.1, 0.7, 0.1, 1) 400ms;
+  transition: all cubic-bezier(0.1, 0.7, 0.1, 1) 400ms; }
+
+.slide-in-right.ng-enter-active, .slide-in-right > .ng-enter-active {
+  -webkit-transform: translateX(0);
+  transform: translateX(0); }
+
+.slide-in-right.ng-leave, .slide-in-right > .ng-leave {
+  -webkit-transition: all ease-in-out 250ms;
+  transition: all ease-in-out 250ms; }
+
+.highlight-input {
+  background-color: #E0EDFB !important; }
+
+input.reset-field {
+  padding-right: 20px; }
+
+.reset-field-icon {
+  position: absolute;
+  right: 6px;
+  top: 22px;
+  margin: 0px;
+  color: #bbb; }
+
+.sticky-header-list {
+  width: 100%; }
+
+.has-subheader {
+  top: 104px; }
+
+.listee {
+  margin-bottom: 0; }
+
+.custom-close-icon {
+  font-size: 110% !important; }
+
+.mega-padding {
+  padding-bottom: 250px; }
+
+.custom-bar-without-background {
+  background-image: none; }

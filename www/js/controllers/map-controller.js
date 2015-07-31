@@ -22,7 +22,13 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
     var directionsService = new google.maps.DirectionsService();
 
     var map;
+    var autocompleteService;
+    var placesDetailService;
+    var previousDestinationCoords = {};
+    var previousOriginCoords = {};
+    var directionsSetBySearch = false;
     var mapCanvasDiv, scrollDiv, mapWrapperDiv, holdOverlay, mapCanvasDivTop;
+    var clickMapEventHandler;
 
     var currentBusLines;
     var routeIndexChanged, previousRouteIndex;
@@ -53,10 +59,12 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                             switch (buttonIndex) {
                                 case 1:
                                     console.log("<-- origin");
+                                    directionsSetBySearch = false;
                                     setOriginMarker(coordinates.lat(), coordinates.lng());
                                     break;
                                 case 2:
                                     console.log("<-- dest");
+                                    directionsSetBySearch = false;
                                     setDestinationMarker(coordinates.lat(), coordinates.lng());
                                     break;
                             }
@@ -184,7 +192,9 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                         directionsDisplay.setDirections(response);
                         //console.log(JSON.stringify(response), "directionsService.route <-- response");
                         $scope.routeCalculated = true;
+                        console.log((response), "<-- JSON.stringify(response)");
                         notifyAfterRouteCaclulation();
+                        fillDirectionsFields(response);
 
                         //var titleText = 'Route';
                         //if (response.hasOwnProperty('routes')) {
@@ -265,21 +275,25 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
     //and (ax,ay) its bottom-right coordinates.
     bb.ax = 51.459781;
     bb.ay = 10.128727;
+    var defaultBounds = new google.maps.LatLngBounds(
+        new google.maps.LatLng(bb.ix, bb.iy),
+        new google.maps.LatLng(bb.ax, bb.ay));
+
     function isInsideOfGoettingenBounds(lat, lng) {
         if (lat === -1000 && lng === -1000) {
-            $cordovaToast.show('Ihre aktuelle Position konnte nicht ermittelt werden. Bitte geben Sie die Berechtigung zur Nutzung der Ortungsdienste für diese App frei.', 'long', 'top');
+            $cordovaToast.show('Ihre aktuelle Position konnte nicht ermittelt werden. Bitte geben Sie die Berechtigung zur Nutzung der Ortungsdienste für diese App frei.', 'long', 'bottom');
             return false;
-        }
+        } else {
+            var check = (lat <= bb.ix &&
+            lat >= bb.ax &&
+            lng >= bb.iy &&
+            lng <= bb.ay);
 
-        var check = (lat <= bb.ix &&
-        lat >= bb.ax &&
-        lng >= bb.iy &&
-        lng <= bb.ay);
-
-        if (!check) {
-            $cordovaToast.show('Ihre aktuelle Position scheint ausserhalb von Göttingen zu liegen. Wir haben für Sie das Gänseliesel als Start gewählt.', 'long', 'top');
+            if (!check) {
+                $cordovaToast.show('Ihre aktuelle Position scheint ausserhalb von Göttingen zu liegen. Wir haben für Sie das Gänseliesel als Start gewählt.', 'long', 'bottom');
+            }
+            return check;
         }
-        return check;
     }
 
     function notifyOffline() {
@@ -296,11 +310,11 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         //});
 
         // listen for Offline event
-        $rootScope.$on('$cordovaNetwork:offline', function (event, networkState) {
+        $rootScope.$on('$cordovaNetwork:offline', function () {
             notifyOffline();
         });
         // listen for Online event
-        $rootScope.$on('$cordovaNetwork:online', function (event, networkState) {
+        $rootScope.$on('$cordovaNetwork:online', function () {
             if (originMarker && destinationMarker && $scope.routeCalculated === false) {
                 $scope.calcRoute();
             }
@@ -352,13 +366,24 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         mapWrapperDiv = document.getElementsByClassName('map-wrapper');
 
         map = new google.maps.Map(mapCanvasDiv, mapOptions);
+        autocompleteService = new google.maps.places.AutocompleteService();
+        placesDetailService = new google.maps.places.PlacesService(map);
 
         var currentLocationControlDiv = document.createElement('div');
         currentLocationControlDiv.className = 'currentLocationControl';
-        var currentLocationControl = new CurrentLocation(currentLocationControlDiv, map);
+        var currentLocationControl;
+        currentLocationControl = new CurrentLocation(currentLocationControlDiv);
 
         currentLocationControlDiv.index = 1;
         map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(currentLocationControlDiv);
+
+        var customDirectionsControlDiv = document.createElement('div');
+        customDirectionsControlDiv.className = 'customDirectionsControl';
+        var customDirectionsControl;
+        customDirectionsControl = new CustomDirectionsControl(customDirectionsControlDiv);
+
+        customDirectionsControlDiv.index = 1;
+        map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(customDirectionsControlDiv);
 
         directionsDisplay.setMap(map);
         directionsDisplay.setPanel(document.getElementById('directions-panel'));
@@ -367,7 +392,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
             computeTotalDistance(directionsDisplay.getDirections());
         });
 
-        var clickMapEventHandler = google.maps.event.addListener(map, 'click', function (event) {
+        clickMapEventHandler = google.maps.event.addListener(map, 'click', function (event) {
             setDestinationMarker(event.latLng.lat(), event.latLng.lng());
             google.maps.event.removeListener(clickMapEventHandler);
 
@@ -389,7 +414,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
 
         });
 
-        getCurrentLocationStart();
+        getCurrentLocationOnceAndWatch();
 
         $scope.map = map;
 
@@ -424,6 +449,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
             });
             // setup drag event for destination marker
             google.maps.event.addListener(destinationMarker, 'dragend', function () {
+                directionsSetBySearch = false;
                 $scope.calcRoute();
             });
         } else {
@@ -450,6 +476,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                 visible: false
             });
             google.maps.event.addListener(originMarker, 'dragend', function () {
+                directionsSetBySearch = false;
                 $scope.calcRoute();
             });
         } else {
@@ -495,42 +522,58 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         enableHighAccuracy: true // may cause errors if true
     };
 
-    function getCurrentLocationStart() {
-        if (userLocationMarker) {
-            userLocationMarker.setMap(null);
-            userLocationMarker = null;
+    function restartGetCurrentLocationWatcher(userTap) {
+        if ($scope.watchPositionID) {
+            $scope.watchPositionID.clearWatch();
+            //$scope.watchPositionID = null;
         }
+        startCurrentLocationWatcher(userTap);
+    }
 
+    function getCurrentLocationOnceAndWatch() {
         $cordovaGeolocation
             .getCurrentPosition(posOptions)
             .then(function (position) {
                 var lat = position.coords.latitude;
                 var long = position.coords.longitude;
-                setUserLocationMarker(lat, long);
+                setUserLocationMarker(lat, long, true);
             }, function (error) {
                 console.error('Error w/ getCurrentPosition: ' + JSON.stringify(error));
-                setUserLocationMarker(-1000, -1000);
+                setUserLocationMarker(-1000, -1000, true);
+                $scope.watchPositionID.clearWatch();
+
             });
+        startCurrentLocationWatcher(false);
+    }
+
+    function startCurrentLocationWatcher(userTap) {
+        if (userTap) {
+            $scope.watchPositionID.clearWatch();
+            $scope.watchPositionID = null;
+        }
 
         if (!$scope.watchPositionID) {
             $scope.watchPositionID = $cordovaGeolocation.watchPosition(watchOptions);
+            $scope.watchPositionID.then(
+                null,
+                function (error) {
+                    console.error('Error w/ watchPosition: ' + JSON.stringify(error));
+                    if (error.code === 3) {
+                        restartGetCurrentLocationWatcher();
+                    }
+                },
+                function (position) {
+                    var lat = position.coords.latitude;
+                    var long = position.coords.longitude;
+                    setUserLocationMarker(lat, long, userTap);
+                });
+        } else {
+            //console.log($scope.watchPositionID, "<-- $scope.watchPositionID already defined!");
         }
 
-        $scope.watchPositionID.then(
-            null,
-            function (error) {
-                console.error('Error w/ watchPosition: ' + JSON.stringify(error));
-
-            },
-            function (position) {
-                var lat = position.coords.latitude;
-                var long = position.coords.longitude;
-
-                setUserLocationMarker(lat, long);
-            });
     }
 
-    function setUserLocationMarker(lat, lng) {
+    function setUserLocationMarker(lat, lng, userTap) {
         if (!userLocationMarker) {
             var userLocationIconPath = "img/user-location.png";
             if (!isInsideOfGoettingenBounds(lat, lng)) {
@@ -552,11 +595,13 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
             userLocationMarker = new google.maps.Marker({
                 position: new google.maps.LatLng(lat, lng),
                 map: map,
-                animation: google.maps.Animation.DROP,
                 draggable: false,
                 icon: userLocationIcon
             });
-            map.setCenter(userLocationMarker.position);
+
+            if (userTap) {
+                map.setCenter(userLocationMarker.position);
+            }
 
         } else {
             if (userLocationMarker.getPosition().lat() !== lat || userLocationMarker.getPosition().lng() !== lng) {
@@ -577,6 +622,9 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                     new google.maps.Size(36, 36)
                 ));
                 userLocationMarker.setPosition(new google.maps.LatLng(lat, lng));
+                if (userTap) {
+                    map.setCenter(userLocationMarker.position);
+                }
             }
 
         }
@@ -586,7 +634,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
 
     }
 
-    function CurrentLocation(controlDiv, map) {
+    function CurrentLocation(controlDiv) {
 
         // Set CSS for the control border
         var controlUI = document.createElement('div');
@@ -604,12 +652,29 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         // Setup the click event listeners: simply set the map to
         // Chicago
         google.maps.event.addDomListener(controlUI, 'click', function () {
-            if ($scope.watchPositionID) {
-                $scope.watchPositionID.clearWatch();
-            }
-            getCurrentLocationStart();
+            //console.log("<-- controlUI click");
+            restartGetCurrentLocationWatcher(true);
         });
+    }
 
+    function CustomDirectionsControl(controlDiv) {
+
+        // Set CSS for the control border
+        var controlUI = document.createElement('div');
+        controlUI.className = 'customDirectionsControlUI';
+        controlUI.title = 'Click to type in destinations';
+
+        controlDiv.appendChild(controlUI);
+
+        // Set CSS for the control interior
+        var controlText = document.createElement('div');
+        controlText.className = 'controlTextUI';
+        controlText.innerHTML = '<i class="icon ion-ios-list"></i>';
+        controlUI.appendChild(controlText);
+
+        google.maps.event.addDomListener(controlUI, 'click', function () {
+            $scope.openDirectionsModal();
+        });
     }
 
     function directionsDisplayUpdated() {
@@ -790,10 +855,21 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
     function clear_markers(markerArray) {
 
         for (var i = 0; i < markerArray.length; i++) {
-            markerArray[i].setMap(null);
+            if (markerArray[i]) {
+                markerArray[i].setMap(null);
+            }
         }
         markerArray.length = 0;
         return [];
+    }
+
+    function clear_marker(marker) {
+        if (marker) {
+            marker.setMap(null);
+            marker = null;
+
+        }
+        return null;
     }
 
     function restartLiveBusTimer() {
@@ -822,14 +898,14 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                         $scope.surveyData = result;
                         var completedSurveys = $localstorage.getObject('surveys');
                         if (!completedSurveys[result.id]) {
-                            $scope.openModal();
+                            $scope.openSurveyModal();
                         } else {
                             console.log("Survey already finished.");
-                            $scope.closeModal();
+                            $scope.closeSurveyModal();
                         }
                     } else {
                         console.log("Survey data is empty.");
-                        $scope.closeModal();
+                        $scope.closeSurveyModal();
                     }
                 });
         } else {
@@ -840,26 +916,439 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
 
     }
 
+    $scope.inputFocus = null;
+    $scope.autocompletePlaces = [];
+    $scope.autocompleteDestination = '';
+    $scope.historyPlaces = [];
+    var localStoragePlaces = $localstorage.getObject('places');
+    if (localStoragePlaces.hasOwnProperty('history')) {
+        $scope.historyPlaces = $localstorage.getObject('places').history;
+    }
+
+    $scope.searchEverywhere = {checked: false};
+
+    $scope.clearInput = function (el) {
+        $scope.directions[el].text = '';
+        $scope.directions[el] = {};
+        $scope.autocompletePlaces = [];
+        var inputElement = document.getElementById(el);
+        $timeout(function () {
+            inputElement.focus();
+        });
+    };
+
+    function fillDirectionsFields(directions_response) {
+
+        function filterResponseAddresses(rawString) {
+            var filteredAddressArray = rawString.split(', ');
+            var filteredAddress = '';
+            for (var i = 0, len = filteredAddressArray.length; i < len; i++) {
+                console.log(filteredAddressArray[i], "<-- filteredAddressArray[i]");
+                if (filterPlaceName(filteredAddressArray[i])) {
+                    if (filteredAddress === '') {
+                        filteredAddress = filteredAddressArray[i];
+                    } else {
+                        filteredAddress = filteredAddress + ', ' + filteredAddressArray[i];
+                    }
+                }
+            }
+            return filteredAddress;
+        }
+
+        if (directions_response) {
+            if (directions_response.request &&
+                directions_response.request.origin &&
+                directions_response.request.destination &&
+                directions_response.routes && directions_response.routes.length > 0 &&
+                directions_response.routes[0].legs && directions_response.routes[0].legs.length > 0 &&
+                directions_response.routes[0].legs[0].end_address && directions_response.routes[0].legs[0].start_address) {
+
+                if (!directionsSetBySearch || $scope.directions.origin.place_id === 'do_not_save') {
+                    $scope.directions.origin = {
+                        text: filterResponseAddresses(directions_response.routes[0].legs[0].start_address),
+                        coords: directions_response.request.origin,
+                        icon: 'ion-android-pin'
+                    };
+                }
+
+                if (!directionsSetBySearch || $scope.directions.destination.place_id === 'do_not_save') {
+                    $scope.directions.destination = {
+                        text: filterResponseAddresses(directions_response.routes[0].legs[0].end_address),
+                        coords: directions_response.request.destination,
+                        icon: 'ion-android-pin'
+                    };
+                }
+                if (!directionsSetBySearch || $scope.directions.origin.place_id === 'do_not_save' || $scope.directions.destination.place_id === 'do_not_save') {
+                    previousOriginCoords.lat = $scope.directions.origin.coords.lat();
+                    previousOriginCoords.lng = $scope.directions.origin.coords.lng();
+                    previousDestinationCoords.lat = $scope.directions.destination.coords.lat();
+                    previousDestinationCoords.lng = $scope.directions.destination.coords.lng();
+                }
+            }
+        } else {
+            directionsSetBySearch = false;
+        }
+        //text: place.text,
+        //    place_id: (place.place_id ? place.place_id : null),
+        //    coords: place.coords,
+        //    icon: place.icon
+    }
+
+    function getAutocompletePredictions(request) {
+        //console.log("--------------- autocompleteService getting THROTTLE called");
+        autocompleteService.getPlacePredictions(request, autocompleteServiceCallback);
+    }
+
+    var getThrottledAutocompletePredictions = _.throttle(getAutocompletePredictions, 1000);
+
+    $scope.chooseFirstSuggestionOrSubmit = function (e) {
+        if ($scope.autocompletePlaces && $scope.autocompletePlaces.length > 0) {
+            $scope.suggestedPlaceCLicked($scope.autocompletePlaces[0]);
+            e.preventDefault();
+        } else if ($scope.directions[$scope.inputFocus] && $scope.directions[$scope.inputFocus].coords && $scope.directions[$scope.inputFocus].coords.lat()) {
+            console.log("swap da focus");
+            if ($scope.inputFocus === 'origin') {
+                document.getElementById("destination").focus();
+            } else if ($scope.inputFocus === 'destination') {
+                document.getElementById("origin").focus();
+            }
+            $scope.autocompletePlaces = [];
+        } else {
+            console.log(JSON.stringify($scope.directions[$scope.inputFocus]), "<-- JSON.stringify($scope.directions[$scope.inputFocus])");
+            console.log("chooseFirstSuggestionOrSubmit");
+            $cordovaToast.show('Wählen Sie einen Start- und Zielort aus den Suchergebnissen oder dem Verlauf.', 'short', 'top');
+        }
+
+    };
+
+    var previousPlaceInput = '';
+    $scope.inputChanged = function (input) {
+
+        if (!input) {
+            if ($scope.directions && $scope.directions[$scope.inputFocus] && $scope.directions[$scope.inputFocus].text) {
+                input = $scope.directions[$scope.inputFocus].text;
+            } else {
+                $scope.autocompletePlaces = [];
+                return;
+            }
+        }
+
+        if (!$scope.searchEverywhere.checked) {
+            input = "Göttingen " + input;
+        }
+        if (input && input !== '' && typeof input !== 'undefined') {
+
+            if (previousPlaceInput !== input) {
+                console.log(input, "<-- input");
+                var request = {
+                    bounds: defaultBounds,
+                    input: input,
+                    componentRestrictions: {
+                        country: 'de'
+                    }
+                };
+
+                getThrottledAutocompletePredictions(request);
+                previousPlaceInput = input;
+            }
+        } else {
+            $scope.autocompletePlaces = [];
+        }
+    };
+
+    function assignPlaceToField(coords) {
+        if ($scope.inputFocus && coords) {
+            $scope.directions[$scope.inputFocus].coords = coords;
+
+            if ($scope.inputFocus === 'origin') {
+                if ($scope.directions && $scope.directions.destination &&
+                    $scope.directions.destination.coords && $scope.directions.destination.coords.lat()) {
+                    console.log("Closing modal - every needed info completed");
+                    $scope.closeDirectionsModal($scope.directions);
+                } else {
+                    document.getElementById("destination").focus();
+
+                    $scope.autocompletePlaces = [];
+                }
+            } else if ($scope.inputFocus === 'destination') {
+                if ($scope.directions && $scope.directions.origin &&
+                    $scope.directions.origin.coords && $scope.directions.origin.coords.lat()) {
+                    $scope.closeDirectionsModal($scope.directions);
+
+                } else {
+                    document.getElementById("origin").focus();
+
+                    $scope.autocompletePlaces = [];
+                }
+            }
+        } else {
+            console.log($scope.inputFocus, coords, "<-- $scope.inputFocus, coords");
+            console.error("No coords passed in");
+        }
+    }
+
+    $scope.suggestedPlaceCLicked = function (chosenPlace) {
+        if (!$scope.directions[$scope.inputFocus]) {
+            $scope.directions[$scope.inputFocus] = {};
+        }
+        if (chosenPlace === 'currentLocation') {
+
+            if (userLocationMarker) {
+                $scope.directions[$scope.inputFocus].text = 'Aktueller Ort';
+                $scope.directions[$scope.inputFocus].place_id = 'do_not_save';
+                $scope.directions[$scope.inputFocus].icon = 'ion-android-locate';
+                assignPlaceToField(userLocationMarker.getPosition());
+            } else {
+                console.log("NO USER LOCATION FOUND");
+            }
+        } else {
+
+            if (!chosenPlace || chosenPlace.text === '') {
+                console.log(chosenPlace, "<-- chosenPlace");
+                console.error("chosenPlace does not exist or no text");
+                return;
+            }
+
+            $scope.directions[$scope.inputFocus].text = chosenPlace.text;
+            if (chosenPlace.place_id) {
+                $scope.directions[$scope.inputFocus].place_id = chosenPlace.place_id;
+            } else {
+                console.log("chosenPlace does not have place_id");
+            }
+            $scope.directions[$scope.inputFocus].icon = chosenPlace.icon;
+
+            if (chosenPlace.geometry && chosenPlace.geometry.location) {
+                assignPlaceToField(chosenPlace.geometry.location);
+            } else if (chosenPlace && chosenPlace.coords && chosenPlace.coords.lat) {
+                //console.log("place coming from map / history");
+                assignPlaceToField(chosenPlace.coords);
+            } else if (chosenPlace.place_id) {
+                //console.log("place from auto suggestions");
+                placesDetailService.getDetails({placeId: chosenPlace.place_id}, function (place, status) {
+
+                    if (status !== google.maps.places.PlacesServiceStatus.OK) {
+                        //console.log(status, "<-- status");
+                        return;
+                    }
+                    if (place.geometry && place.geometry.location) {
+                        assignPlaceToField(place.geometry.location);
+                    }
+
+                });
+            } else {
+                console.error(chosenPlace, "SOMETHING WRONG chosenPlace");
+            }
+
+        }
+    };
+
+    function deleteAutocompletePlaces() {
+        if ($scope.autocompletePlaces) {
+            $scope.$apply(function () {
+                $scope.autocompletePlaces = [];
+            });
+        }
+    }
+
+    function addPlaceToHistory(place) {
+
+        if (place) {
+            if (place.place_id === 'do_not_save') {
+                return;
+            }
+            var newPlace = {
+                text: place.text,
+                place_id: (place.place_id ? place.place_id : null),
+                coords: place.coords,
+                icon: place.icon
+            };
+
+            var duplicateFound = -1;
+            for (var i = 0, len = $scope.historyPlaces.length; i < len; i++) {
+                var p = $scope.historyPlaces[i];
+                if (p.place_id === newPlace.place_id) {
+                    duplicateFound = i;
+                    break;
+                }
+            }
+            if (duplicateFound > -1) {
+                $scope.historyPlaces.splice(i,1);
+            }
+            $scope.historyPlaces.unshift(newPlace);
+
+            if ($scope.historyPlaces.length > 10) {
+                $scope.historyPlaces = $scope.historyPlaces.slice(0, 10);
+            }
+
+            $localstorage.setObject('places', {history: $scope.historyPlaces});
+        }
+    }
+
+    function filterPlaceName(term) {
+        console.log(term, "<-- filterPlaceName -- term");
+        return (
+            term !== 'Göttingen' &&
+            term !== 'Deutschland' && !(/^\d{5}$/.test(+term)) && !(/^\d{5} Göttingen/.test(term))
+        );
+    }
+
+    function autocompleteServiceCallback(places, status) {
+
+        if (status !== google.maps.places.PlacesServiceStatus.OK) {
+            console.log(status, "<-- status");
+            if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+                console.log("GOT THAT");
+                deleteAutocompletePlaces();
+                //$scope.autocompletePlaces = [];
+            }
+            //$scope.autocompletePlaces = [];
+            return;
+        }
+
+        var filteredPlaces = [];
+        for (var i = 0, len = places.length; i < len; i++) {
+            if (places[i].hasOwnProperty('terms')) {
+                var newPlaceDescription = '';
+
+                for (var j = 0, termsLen = places[i].terms.length; j < termsLen; j++) {
+                    var term = places[i].terms[j].value;
+                    if (filterPlaceName(term)) {
+                        if (newPlaceDescription === '') {
+                            newPlaceDescription = term;
+                        } else {
+                            newPlaceDescription = newPlaceDescription + ', ' + term;
+                        }
+
+                    }
+                }
+                var types = places[i].types;
+                if (newPlaceDescription !== '' && types.indexOf('political') === -1) {
+                    console.log(newPlaceDescription, "<-- newPlaceDescription");
+                    //console.log(places[i].types, "<-- places[i].types");
+
+                    var icon = 'ion-android-pin';
+                    if (types.indexOf('transit_station') > -1) {
+                        icon = 'ion-android-bus';
+                    } else if (types.indexOf('point_of_interest') > -1) {
+                        icon = 'ion-flag';
+                    } else if (types.indexOf('natural_feature') > -1) {
+                        icon = 'ion-image';
+                    } else if (types.indexOf('establishment') > -1) {
+                        icon = 'ion-home';
+                    }
+                    filteredPlaces.push({
+                        text: newPlaceDescription,
+                        icon: icon,
+                        place_id: places[i].place_id
+                    });
+                }
+            }
+        }
+        if (filteredPlaces && filteredPlaces[0]) {
+            //autocomplete-destination
+            $scope.autocompleteDestination = filteredPlaces[0].text;
+        } else {
+            $scope.autocompleteDestination = '';
+        }
+        $scope.$apply(function () {
+            $scope.autocompletePlaces = filteredPlaces;
+        });
+    }
+
+    $scope.changeInputFocus = function (input) {
+        //$scope.$apply(function () {
+        $scope.inputFocus = input;
+        //});
+    };
+
     $ionicPlatform.ready(function () {
 
+        // setup directionsModal
+        $scope.directions = {};
+        $scope.directions.destination = {};
+        $scope.directions.origin = {};
+        $ionicModal.fromTemplateUrl("templates/directions-modal.html", {
+            scope: $scope,
+            animation: "slide-in-right",
+            focusFirstInput: true
+        }).then(function (directionsModal) {
+            $scope.directionsModal = directionsModal;
+
+        }.bind($scope));
+
+        $scope.openDirectionsModal = function () {
+            $scope.directionsModal.show();
+            if (window.cordova.plugins.Keyboard) {
+                window.cordova.plugins.Keyboard.show();
+            }
+            ionic.Platform.fullScreen(true, false);
+
+        };
+
+        $scope.forceCloseDirectionsModal = function (){
+            $scope.directionsModal.hide();
+            ionic.Platform.fullScreen(false, true);
+        };
+
+        $scope.closeDirectionsModal = function () {
+            console.log(JSON.stringify(previousDestinationCoords), "<-- previousDestinationCoords");
+            console.log(JSON.stringify(previousOriginCoords), "<-- previousOriginCoords");
+            console.log(JSON.stringify($scope.directions), "<-- $scope.directions");
+            if ($scope.directions.destination && $scope.directions.origin &&
+                $scope.directions.origin.coords && $scope.directions.destination.coords) {
+
+                if (previousDestinationCoords.lat !== $scope.directions.destination.coords.lat() ||
+                    previousDestinationCoords.lng !== $scope.directions.destination.coords.lng() ||
+                    previousOriginCoords.lat !== $scope.directions.origin.coords.lat() ||
+                    previousOriginCoords.lng !== $scope.directions.origin.coords.lng()) {
+                    destinationMarker = clear_marker(destinationMarker);
+                    directionsSetBySearch = true;
+                    setOriginMarker($scope.directions.origin.coords.lat(), $scope.directions.origin.coords.lng());
+                    setDestinationMarker($scope.directions.destination.coords.lat(), $scope.directions.destination.coords.lng());
+                    console.log("setting markers");
+                    previousOriginCoords.lat = $scope.directions.origin.coords.lat();
+                    previousOriginCoords.lng = $scope.directions.origin.coords.lng();
+                    previousDestinationCoords.lat = $scope.directions.destination.coords.lat();
+                    previousDestinationCoords.lng = $scope.directions.destination.coords.lng();
+                    addPlaceToHistory($scope.directions.destination);
+                    addPlaceToHistory($scope.directions.origin);
+                    //    ADD TO HISTORY
+                    if (clickMapEventHandler) {
+                        google.maps.event.removeListener(clickMapEventHandler);
+                    }
+                } else {
+                    $cordovaToast.show('Die Route bleibt unverändert.', 'short', 'center');
+                }
+                $scope.directionsModal.hide();
+                ionic.Platform.fullScreen(false, true);
+            } else {
+                console.log("closeDirectionsModal");
+                $cordovaToast.show('Wählen Sie einen Start- und Zielort aus den Suchergebnissen oder dem Verlauf.', 'short', 'top');
+            }
+
+        };
+
+        // setup survey modal
         $scope.answers = {};
         $ionicModal.fromTemplateUrl("templates/survey-modal.html", {
             scope: $scope,
-            animation: "slide-in-up"
+            animation: "slide-in-up",
+            hardwareBackButtonClose: false,
+            backdropClickToClose: false
         }).then(function (modal) {
-            $scope.modal = modal;
+            $scope.surveyModal = modal;
             showSurveyIfNeeded();
         }.bind($scope));
 
-        $scope.openModal = function () {
+        $scope.openSurveyModal = function () {
             HardwareBackButtonManager.disable();
             //console.log("HardwareBackButtonManager disable");
-            $scope.modal.show();
+            $scope.surveyModal.show();
         };
-        $scope.closeModal = function () {
+        $scope.closeSurveyModal = function () {
             HardwareBackButtonManager.enable();
             //console.log("HardwareBackButtonManager enable");
-            $scope.modal.hide();
+            $scope.surveyModal.hide();
         };
 
         $scope.submitSurvey = function (answers) {
@@ -889,14 +1378,15 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                 $localstorage.setObject('surveys', completedSurveys);
                 //console.log(JSON.stringify(completedSurveys), "<-- localStorage surveys");
 
-                $scope.closeModal();
+                $scope.closeSurveyModal();
             }
         };
 
         $scope.$on("$destroy", function () {
             //Cleanup the modal when we"re done with it!
             HardwareBackButtonManager.enable();
-            $scope.modal.remove();
+            $scope.surveyModal.remove();
+            $scope.directionsModal.remove();
         });
 
         $scope.$on("modal.hidden", function () {
@@ -917,6 +1407,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         $scope.answers = {};
         //console.log("app goes in the background");
         $scope.surveyData = null;
-        $scope.closeModal();
+        $scope.closeSurveyModal();
     });
-});
+})
+;

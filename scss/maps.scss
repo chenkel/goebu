@@ -11,9 +11,7 @@
   z-index: 11;
 }
 
-
-
-$map-list-ratio : 0.90;
+$map-list-ratio: 0.90;
 @function mapPaddingBottom($pixels) {
 
   @if (unitless($pixels)) {
@@ -97,7 +95,7 @@ $map-list-ratio : 0.90;
 // Controls Styling
 .currentLocationControl {
   padding-right: 10px;
-  padding-bottom: 10px;
+  padding-bottom: 64px;
   position: fixed !important;
   bottom: 0;
   left: initial !important;
@@ -124,8 +122,27 @@ $map-list-ratio : 0.90;
   padding-right: 5px;
 }
 
-// hide google maps stuff
+.customDirectionsControl {
+  padding-right: 10px;
+  padding-bottom: 10px;
+  position: fixed !important;
+  bottom: 0;
+  left: initial !important;
+  right: 0;
 
+}
+
+.customDirectionsControlUI {
+  background-color: rgba(255, 255, 255, 0.55);
+  border-radius: 34px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+  cursor: pointer;
+  text-align: center;
+  width: 44px;
+  height: 44px;
+}
+
+// hide google maps stuff
 
 #map_canvas > .gm-style > div:nth-child(2) {
   display: none !important;
@@ -154,7 +171,6 @@ $map-list-ratio : 0.90;
 [jsdisplay*="line.agencies"] {
   display: none;
 }
-
 
 .labels {
   color: white;
