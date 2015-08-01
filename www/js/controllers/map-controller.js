@@ -242,7 +242,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
 
     $scope.swapMarkers = function () {
         //originMarker = [destinationMarker, destinationMarker = originMarker][0];
-
+        directionsSetBySearch = false;
         var tempMarkerPosition = destinationMarker.getPosition();
         destinationMarker.setPosition(originMarker.getPosition());
         originMarker.setPosition(tempMarkerPosition);

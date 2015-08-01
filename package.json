@@ -23,7 +23,6 @@
   },
   "cordovaPlugins": [
     "cordova-plugin-geolocation",
-    "cordova-plugin-crosswalk-webview",
     "cordova-plugin-device",
     {
       "locator": "https://github.com/VitaliiBlagodir/cordova-plugin-datepicker.git",
@@ -37,7 +36,6 @@
       "locator": "https://github.com/danwilson/google-analytics-plugin.git",
       "id": "cordova-plugin-google-analytics"
     },
-    "cordova-plugin-googleplayservices",
     "cordova-plugin-network-information",
     {
       "locator": "https://github.com/EddyVerbruggen/cordova-plugin-actionsheet.git",
@@ -55,10 +53,11 @@
     {
       "locator": "https://github.com/driftyco/ionic-plugins-deploy",
       "id": "com.ionic.deploy"
-    }
+    },
+    "cordova-plugin-crosswalk-webview"
   ],
   "cordovaPlatforms": [
-    "ios",
-    "android"
+    "android",
+    "ios"
   ]
 }

@@ -1,13 +1,15 @@
 "use strict";
-//(function () {
-//
-//    var debug = false;
-//
-//    if (debug === false) {
-//        if ( typeof(window.console) === 'undefined') { window.console = {}; }
-//        window.console.log = function () {};
-//    }
-//})();
+(function () {
+
+    var debug = false;
+    if (debug === false) {
+        if ( typeof(window.console) === 'undefined') { window.console = {}; }
+        window.console.log = function () {};
+        window.console.info = function () {};
+        window.console.warn = function () {};
+        window.console.error = function () {};
+    }
+})();
 
 // Ionic goebu App
 

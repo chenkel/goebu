@@ -1,6 +1,6 @@
 {
   "name": "ionic-service-analytics",
-  "version": "0.2.0",
+  "version": "0.2.3",
   "description": "Analytics service for Ionic apps",
   "keywords": [
     "ionic",
@@ -14,7 +14,7 @@
     "url": "https://github.com/driftyco/ionic-service-analytics/issues"
   },
   "dependencies": {
-    "ionic-service-core": ">=0.1.7"
+    "ionic-service-core": ">=0.1.9"
   },
   "devDependencies": {
     "gulp": "^3.7.0",
