@@ -26,6 +26,9 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
     var placesDetailService;
     var previousDestinationCoords = {};
     var previousOriginCoords = {};
+    var previousCurrenLocationLat;
+    var previousCurrenLocationLng;
+    var wasOutsideGoettingenBounds = false;
     var directionsSetBySearch = false;
     var mapCanvasDiv, scrollDiv, mapWrapperDiv, holdOverlay, mapCanvasDivTop;
     var clickMapEventHandler;
@@ -289,8 +292,11 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
             lng >= bb.iy &&
             lng <= bb.ay);
 
-            if (!check) {
+            if (!check && !wasOutsideGoettingenBounds) {
                 $cordovaToast.show('Ihre aktuelle Position scheint ausserhalb von Göttingen zu liegen. Wir haben für Sie das Gänseliesel als Start gewählt.', 'long', 'bottom');
+                wasOutsideGoettingenBounds = true;
+            } else {
+                wasOutsideGoettingenBounds = false;
             }
             return check;
         }
@@ -494,31 +500,12 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         total = total / 1000.0;
     }
 
-    $scope.centerOnMe = function () {
-        if (!$scope.map) {
-            return;
-        }
-
-        $scope.loading = $ionicLoading.show({
-            content: 'Getting current location...',
-            showBackdrop: false
-        });
-
-        navigator.geolocation.getCurrentPosition(function (pos) {
-            $scope.map.setCenter(new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
-            $scope.loading.hide();
-        }, function (error) {
-            console.log('Unable to get location: ' + error.message);
-            setUserLocationMarker(0, 0, true);
-        });
-    };
-
     //Aktuelle Position
 
-    var posOptions = {timeout: 10000, enableHighAccuracy: true};
+    var posOptions = {timeout: 30000, enableHighAccuracy: true};
     var watchOptions = {
         frequency: 1000,
-        timeout: 10000,
+        timeout: 30000,
         enableHighAccuracy: true // may cause errors if true
     };
 
@@ -570,37 +557,39 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
     }
 
     function setUserLocationMarker(lat, lng, userTap) {
-        if (!userLocationMarker) {
-            var userLocationIconPath = "img/user-location.png";
-            if (!isInsideOfGoettingenBounds(lat, lng)) {
+        if (previousCurrenLocationLat !== lat || previousCurrenLocationLng !== lng) {
+            previousCurrenLocationLat = lat;
+            previousCurrenLocationLng = lng;
+            if (!userLocationMarker) {
+                var userLocationIconPath = "img/user-location.png";
+                if (!isInsideOfGoettingenBounds(lat, lng)) {
 
-                userLocationIconPath = "img/user-location-gray.png";
-                // Set it to Gaenseliesl
-                lat = '51.5326892';
-                lng = '9.9353077';
-            }
+                    userLocationIconPath = "img/user-location-gray.png";
+                    // Set it to Gaenseliesl
+                    lat = '51.5326892';
+                    lng = '9.9353077';
+                }
 
-            var userLocationIcon = new google.maps.MarkerImage(
-                userLocationIconPath,
-                new google.maps.Size(36, 36),
-                new google.maps.Point(0, 0),
-                new google.maps.Point(18, 18),
-                new google.maps.Size(36, 36)
-            );
+                var userLocationIcon = new google.maps.MarkerImage(
+                    userLocationIconPath,
+                    new google.maps.Size(36, 36),
+                    new google.maps.Point(0, 0),
+                    new google.maps.Point(18, 18),
+                    new google.maps.Size(36, 36)
+                );
 
-            userLocationMarker = new google.maps.Marker({
-                position: new google.maps.LatLng(lat, lng),
-                map: map,
-                draggable: false,
-                icon: userLocationIcon
-            });
+                userLocationMarker = new google.maps.Marker({
+                    position: new google.maps.LatLng(lat, lng),
+                    map: map,
+                    draggable: false,
+                    icon: userLocationIcon
+                });
 
-            if (userTap) {
-                map.setCenter(userLocationMarker.position);
-            }
+                if (userTap) {
+                    map.setCenter(userLocationMarker.position);
+                }
 
-        } else {
-            if (userLocationMarker.getPosition().lat() !== lat || userLocationMarker.getPosition().lng() !== lng) {
+            } else {
                 var userLocationIconPathWatch = "img/user-location.png";
                 if (!isInsideOfGoettingenBounds(lat, lng)) {
 
@@ -623,9 +612,9 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                 }
             }
 
-        }
-        if (!originMarker) {
-            setOriginMarker(lat, lng);
+            if (!originMarker) {
+                setOriginMarker(lat, lng);
+            }
         }
 
     }
@@ -1168,7 +1157,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                 }
             }
             if (duplicateFound > -1) {
-                $scope.historyPlaces.splice(i,1);
+                $scope.historyPlaces.splice(i, 1);
             }
             $scope.historyPlaces.unshift(newPlace);
 
@@ -1281,7 +1270,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
 
         };
 
-        $scope.forceCloseDirectionsModal = function (){
+        $scope.forceCloseDirectionsModal = function () {
             $scope.directionsModal.hide();
             ionic.Platform.fullScreen(false, true);
         };
@@ -1404,6 +1393,10 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         //console.log("app goes in the background");
         $scope.surveyData = null;
         $scope.closeSurveyModal();
+        if ($scope.watchPositionID) {
+            $scope.watchPositionID.clearWatch();
+            $scope.watchPositionID = null;
+        }
     });
 })
 ;
