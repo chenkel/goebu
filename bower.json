@@ -5,7 +5,8 @@
     "moment": "~2.10.3",
     "async": "~1.2.1",
     "angular-google-places-autocomplete": "~0.2.7",
-    "ion-affix": "~1.0.1"
+    "ion-affix": "~1.0.1",
+    "ngCordova": "~0.1.17-alpha"
   },
   "devDependencies": {
     "ionic": "driftyco/ionic-bower#1.0.1",
