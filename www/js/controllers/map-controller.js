@@ -523,6 +523,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
     };
 
     function restartGetCurrentLocationWatcher() {
+        console.log("Restarting CurrentLocationWatcher");
         if ($scope.watchPositionID) {
             $scope.watchPositionID.clearWatch();
             $scope.watchPositionID = null;
@@ -554,7 +555,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                 function (error) {
                     console.error('Error w/ watchPosition: ' + JSON.stringify(error));
                     if (error.code === 3) {
-                        restartGetCurrentLocationWatcher();
+                        $timeout(restartGetCurrentLocationWatcher, 700);
                     }
                 },
                 function (position) {
