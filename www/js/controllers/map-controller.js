@@ -509,7 +509,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
             $scope.loading.hide();
         }, function (error) {
             console.log('Unable to get location: ' + error.message);
-            setUserLocationMarker(0, 0);
+            setUserLocationMarker(0, 0, true);
         });
     };
 
@@ -518,16 +518,16 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
     var posOptions = {timeout: 10000, enableHighAccuracy: true};
     var watchOptions = {
         frequency: 1000,
-        timeout: 3000,
+        timeout: 10000,
         enableHighAccuracy: true // may cause errors if true
     };
 
-    function restartGetCurrentLocationWatcher(userTap) {
+    function restartGetCurrentLocationWatcher() {
         if ($scope.watchPositionID) {
             $scope.watchPositionID.clearWatch();
-            //$scope.watchPositionID = null;
+            $scope.watchPositionID = null;
         }
-        startCurrentLocationWatcher(userTap);
+        startCurrentLocationWatcher();
     }
 
     function getCurrentLocationOnceAndWatch() {
@@ -543,15 +543,10 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                 $scope.watchPositionID.clearWatch();
 
             });
-        startCurrentLocationWatcher(false);
+        restartGetCurrentLocationWatcher();
     }
 
-    function startCurrentLocationWatcher(userTap) {
-        if (userTap) {
-            $scope.watchPositionID.clearWatch();
-            $scope.watchPositionID = null;
-        }
-
+    function startCurrentLocationWatcher() {
         if (!$scope.watchPositionID) {
             $scope.watchPositionID = $cordovaGeolocation.watchPosition(watchOptions);
             $scope.watchPositionID.then(
@@ -565,7 +560,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                 function (position) {
                     var lat = position.coords.latitude;
                     var long = position.coords.longitude;
-                    setUserLocationMarker(lat, long, userTap);
+                    setUserLocationMarker(lat, long, false);
                 });
         } else {
             //console.log($scope.watchPositionID, "<-- $scope.watchPositionID already defined!");
@@ -653,7 +648,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
         // Chicago
         google.maps.event.addDomListener(controlUI, 'click', function () {
             //console.log("<-- controlUI click");
-            restartGetCurrentLocationWatcher(true);
+            getCurrentLocationOnceAndWatch();
         });
     }
 
