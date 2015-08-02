@@ -1,24 +1,47 @@
 {
   "name": "goebu-server",
   "version": "0.0.1",
-  "description": "Collective intelligence web tool.",
-  "main": "",
+  "description": "Goettinger Verkehrbetriebe Bus App",
+  "main": "index",
   "dependencies": {
+    "async": "*",
     "body-parser": "*",
+    "compression": "*",
+    "cookie-parser": "*",
     "cors": "*",
+    "csv": "*",
+    "debug": "*",
     "express": "*",
-    "mysql": "^2.5.4",
-    "sequelize": "^2.0.2"
+    "jade": "*",
+    "moment": "^2.10.3",
+    "mongodb": "*",
+    "mongoose": "^4.0.1",
+    "morgan": "*",
+    "newrelic": "^1.21.1",
+    "request": "*",
+    "serve-favicon": "*",
+    "underscore": "*",
+    "unzip2": "*"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "csv-parse": "*",
+    "should": "*",
+    "supertest": "*",
+    "timekeeper": "*"
+  },
   "repository": {
     "type": "git",
-    "url": "https://git"
+    "url": "https://github.com/chenkel/goebu.git"
   },
   "keywords": [
     "Goettingen",
     "Bus"
   ],
-  "author": "Christopher Henkel",
-  "license": ""
+  "author": "Christopher Henkel <c.henkel@online.de>",
+  "license": "",
+  "scripts": {
+    "test": "NODE_ENV=test mocha ./test/mocha/**/*.js --reporter spec",
+    "start": "node ./bin/www",
+    "dev": "node-dev ./bin/www"
+  }
 }

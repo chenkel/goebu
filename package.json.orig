@@ -1,0 +1,45 @@
+{
+  "name": "goebu",
+  "version": "1.0.0",
+  "description": "goebu: An Ionic project",
+  "dependencies": {
+    "bunyan": "^1.4.0",
+    "express-bunyan-logger": "^1.1.1",
+    "gulp": "^3.9.0",
+    "gulp-concat": "^2.5.2",
+    "gulp-minify-css": "^1.1.6",
+    "gulp-rename": "^1.2.2",
+    "gulp-sass": "^2.0.1"
+  },
+  "devDependencies": {
+    "bower": "^1.4.1",
+<<<<<<< Updated upstream
+    "gulp-livereload": "^3.8.0",
+    "gulp-plumber": "^1.0.1",
+=======
+>>>>>>> Stashed changes
+    "gulp-util": "^3.0.5",
+    "shelljs": "^0.5.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chenkel/goebu.git"
+  },
+  "cordovaPlugins": [
+    "plugin.google.maps",
+    {
+      "locator": "https://github.com/phonegap-build/PushPlugin.git",
+      "id": "com.phonegap.plugins.PushPlugin"
+    },
+    "cordova-plugin-whitelist",
+    "cordova-plugin-geolocation",
+    "cordova-plugin-crosswalk-webview",
+    "cordova-plugin-splashscreen"
+  ],
+  "cordovaPlatforms": [
+    {
+      "platform": "android",
+      "locator": "browser"
+    }
+  ]
+}

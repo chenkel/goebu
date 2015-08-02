@@ -1,0 +1,37 @@
+<ion-view ng-controller="MapCtrl">
+    <ion-nav-bar data-fittext class="bar-light">
+
+        <ion-nav-buttons side="right">
+            <div ng-show="routeCalculated">
+                <button
+                        class="button button-icon icon ion-arrow-swap"
+                        ng-click=swapMarkers()
+                        ng-show="routeCalculated">
+                </button>
+                <button
+                        class="button button-icon icon ion-clock"
+                        ng-click=setTime()
+                        ng-show="routeCalculated">
+                </button>
+            </div>
+
+        </ion-nav-buttons>
+    </ion-nav-bar>
+
+    <ion-content header-shrink-twitter-style
+                 scroll-event-interval="5"
+                 id="map-content">
+
+        <div class="map-wrapper">
+            <div scroll="false" data-tap-disabled="true">
+                <div id="map_canvas" on-hold="test($event.gesture.center)"></div>
+            </div>
+        </div>
+        <ion-list>
+
+            <div class="card">
+                <div id="directions-panel"></div>
+            </div>
+        </ion-list>
+    </ion-content>
+</ion-view>

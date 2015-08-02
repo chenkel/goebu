@@ -1,0 +1,120 @@
+<ion-modal-view>
+
+    <ion-header-bar class="bar-header custom-bar-without-background">
+        <!--<label class="item-input-wrapper">-->
+        <!--<i class="icon ion-ios7-search placeholder-icon"></i>-->
+        <!--<input type="search" placeholder="Search">-->
+        <!--</label>-->
+        <!--<button class="button button-clear">-->
+        <!--Cancel-->
+        <!--</button>-->
+        <!--<div class="item item-divider item-icon-right">-->
+        <form name="directionsForm"  style="width: 100%">
+            <div class="list sticky-header-list">
+                <div ng-class="inputFocus === 'origin' ? 'highlight-input item item-input item-icon-left item-icon-right item-text-wrap' : 'item item-input item-icon-left item-icon-right item-text-wrap'">
+                    <img src="img/origin.png" style="width:11px; height:20px; margin-right: 10px">
+
+                    <input type="text" class="transparent" id="origin" placeholder="Start (Hausnummer und Straßenname)"
+                           autocapitalize="off" autocorrect="off" autocomplete="off"
+                           ng-focus="changeInputFocus('origin')"
+                           ng-change=inputChanged(directions['origin']['text'])
+                           ng-model=directions['origin']['text']>
+                    <i class="icon custom-close-icon ion-close" ng-click="clearInput('origin')"
+                       ng-show="directions['origin']['text'].length"></i>
+
+                </div>
+
+
+                <div ng-class="inputFocus === 'destination' ? 'highlight-input item item-input item-icon-left item-icon-right' : 'item item-input item-icon-left item-icon-right'">
+                    <img src="img/destination.png" style="width:11px; height:20px; margin-right: 10px">
+                    <input type="text" class="transparent" id="destination" placeholder="Ziel (... oder jeder beliebige Ort.)"
+                           autocapitalize="off" autocorrect="off" autocomplete="off"
+                           ng-focus="changeInputFocus('destination')"
+                           ng-change=inputChanged(directions['destination']['text'])
+                           ng-model=directions['destination']['text']>
+                    <i class="icon custom-close-icon ion-close" ng-click="clearInput('destination')"
+                       ng-show="directions['destination']['text'].length"></i>
+                </div>
+            </div>
+            <input type="submit"
+                   style="position: absolute; left: -9999px; width: 1px; height: 1px;"
+                   tabindex="-1" ng-click=chooseFirstSuggestionOrSubmit($event)>
+        </form>
+    </ion-header-bar>
+    <div class="padding"></div>
+    <ion-content class="has-subheader">
+
+
+
+
+        <div class="list listee">
+            <div class="item item-divider" ion-affix data-affix-within-parent-with-class="listee">
+                <i class="icon ion-map"></i> Suchergebnisse ({{autocompletePlaces.length}})
+            </div>
+            <div ng-hide="autocompletePlaces.length > 0">
+                <a class="item item-text-wrap item-icon-right"
+                   ng-click="suggestedPlaceCLicked('currentLocation')">
+                    <h2>Aktueller Ort</h2>
+                    <i class="icon ion-android-locate"></i>
+                </a>
+                </div>
+
+            <div ng-show="autocompletePlaces.length > 0">
+
+                <div ng-repeat="p in autocompletePlaces track by p.place_id">
+                    <a class="item item-text-wrap item-icon-right"
+                       ng-click="suggestedPlaceCLicked(p)">
+                        <h2>{{p.text}}</h2>
+                        <i class="icon {{p.icon}}"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="list listee">
+            <div ng-show="historyPlaces.length > 0">
+                <div class="item item-divider" ion-affix data-affix-within-parent-with-class="listee">
+                    <i class="icon ion-clipboard"></i> Verlauf ({{historyPlaces.length}})
+                </div>
+                <div ng-repeat="p in historyPlaces track by $index">
+                    <a class="item item-text-wrap item-icon-right"
+                       ng-click="suggestedPlaceCLicked(p)">
+                        <h2>{{p.text}}</h2>
+                        <i class="icon {{p.icon}}"></i>
+                    </a>
+                </div>
+                <!-- HISTORY-->
+
+            </div>
+        </div>
+
+        <div class="list listee">
+            <div class="item item-divider" ion-affix data-affix-within-parent-with-class="listee">
+                <i class="icon ion-gear-a"></i> Optionen
+            </div>
+            <ion-toggle
+                    ng-model="searchEverywhere.checked"
+                    ng-checked="inputChanged()"
+                    toggle-class="toggle-dark">
+                auch außerhalb von Göttingen
+            </ion-toggle>
+        </div>
+
+<div class="mega-padding"></div>
+
+    </ion-content>
+    <!--</ion-scroll>-->
+
+    <!--<ion-footer-bar class="bar bar-footer bar-positive" ng-click=submitSurvey(answers)>-->
+    <ion-footer-bar class="bar bar-footer bar-balanced" >
+        <div class="buttons">
+            <button class="button ion-close-round custom-close-icon" ng-click=forceCloseDirectionsModal()></button>
+        </div>
+        <h1 class="title">Route berechnen</h1>
+
+
+        <div class="buttons">
+            <button class="button button-icon ion-android-arrow-dropright-circle" ng-click=closeDirectionsModal()></button>
+        </div>
+    </ion-footer-bar>
+</ion-modal-view>

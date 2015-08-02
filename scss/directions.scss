@@ -1,0 +1,63 @@
+.highlight-input{
+  background-color: #E0EDFB !important;
+}
+
+input.reset-field { padding-right: 20px; }
+.reset-field-icon {
+  position: absolute;
+  right: 6px;
+  top: 22px;
+  margin: 0px;
+  color: #bbb;
+}
+
+
+//.relative-wrapper{
+//  overflow:visible;
+//  //width: 100%;
+//  height: 49px !important;
+//  position: relative;
+//
+//}
+//                <input id="autocomplete-origin" type="text" ng-model="autocompleteDestination" disabled="disabled" />
+
+//#destination, #origin{
+//  position: absolute;
+//  //float: left;
+//  //display: block;
+//  z-index: 11;
+//  //background: transparent;
+//}
+//
+//#autocomplete-destination,
+//#autocomplete-origin{
+//  position: absolute;
+//  background: transparent !important;
+//  background-color: transparent !important;
+//  z-index: 10;
+//}
+
+.sticky-header-list{
+  width: 100%;
+}
+
+.has-subheader{
+  top: 104px;
+}
+
+.listee {
+  margin-bottom: 0;
+}
+
+.custom-close-icon {
+  font-size: 110% !important;
+}
+
+.mega-padding {
+  padding-bottom: 250px;
+}
+
+.custom-bar-without-background{
+  background-image: none;
+
+}
