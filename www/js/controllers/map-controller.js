@@ -585,9 +585,7 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                     icon: userLocationIcon
                 });
 
-                if (userTap) {
-                    map.setCenter(userLocationMarker.position);
-                }
+
 
             } else {
                 var userLocationIconPathWatch = "img/user-location.png";
@@ -607,14 +605,16 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                     new google.maps.Size(36, 36)
                 ));
                 userLocationMarker.setPosition(new google.maps.LatLng(lat, lng));
-                if (userTap) {
-                    map.setCenter(userLocationMarker.position);
-                }
             }
+
+
 
             if (!originMarker) {
                 setOriginMarker(lat, lng);
             }
+        }
+        if (userLocationMarker && userLocationMarker.position && userTap) {
+            map.setCenter(userLocationMarker.position);
         }
 
     }
@@ -1266,13 +1266,19 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
             if (window.cordova.plugins.Keyboard) {
                 window.cordova.plugins.Keyboard.show();
             }
-            ionic.Platform.fullScreen(true, false);
+            if (!isAndroid){
+                ionic.Platform.fullScreen(true, false);
+            }
+            console.log(ionic.Platform.isFullScreen, "<-- ionic.Platform.isFullScreen");
 
         };
 
         $scope.forceCloseDirectionsModal = function () {
             $scope.directionsModal.hide();
-            ionic.Platform.fullScreen(false, true);
+            if (!isAndroid) {
+                ionic.Platform.fullScreen(false, true);
+            }
+
         };
 
         $scope.closeDirectionsModal = function () {
@@ -1305,7 +1311,11 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
                     $cordovaToast.show('Die Route bleibt unverändert.', 'short', 'center');
                 }
                 $scope.directionsModal.hide();
-                ionic.Platform.fullScreen(false, true);
+                if (!isAndroid) {
+                    ionic.Platform.fullScreen(false, true);
+                }
+
+
             } else {
                 console.log("closeDirectionsModal");
                 $cordovaToast.show('Wählen Sie einen Start- und Zielort aus den Suchergebnissen oder dem Verlauf.', 'short', 'top');
@@ -1397,6 +1407,16 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
             $scope.watchPositionID.clearWatch();
             $scope.watchPositionID = null;
         }
+    });
+
+    $scope.showFooter = true;
+
+    window.addEventListener('native.keyboardshow', function() {
+        $scope.showFooter = false;
+    });
+
+    window.addEventListener('native.keyboardhide', function() {
+        $scope.showFooter = true;
     });
 })
 ;
