@@ -1411,12 +1411,14 @@ angular.module("goebu.controllers").controller('MapCtrl', function ($rootScope, 
 
     $scope.showFooter = true;
 
-    window.addEventListener('native.keyboardshow', function() {
+    
+
+    if (isAndroid) {
+        window.addEventListener('native.keyboardhide', function() {
+            $scope.showFooter = true;
+        });
+        window.addEventListener('native.keyboardshow', function() {
         $scope.showFooter = false;
     });
-
-    window.addEventListener('native.keyboardhide', function() {
-        $scope.showFooter = true;
-    });
-})
-;
+    };
+});
