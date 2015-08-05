@@ -46,24 +46,24 @@ var surveyQuestions = [
             },
             {
                 id: 2020,
-                text: 'Wie viele Routen haben Sie in der letzten Woche nachgeschaut?',
+                text: 'Wie häufig haben Sie Routen in der letzten Woche nachgeschaut?',
                 options: [
-                    'Mehr als 15',
-                    '7 - 15',
-                    '4 - 7',
-                    '1 - 3',
-                    '0'
+                    'Mehr als einmal täglich',
+                    'Einmal pro Tag',
+                    'Mehrmals pro Woche',
+                    'Einmal pro Woche',
+                    'Niemals'
                 ]
             },
             {
                 id: 2030,
-                text: 'Wie viele Minuten haben Sie die App letzte Woche insgesamt genutzt?',
+                text: 'Wie lang haben Sie die App letzte Woche insgesamt genutzt?',
                 options: [
-                    'Länger als 20 Minuten',
-                    '14 - 20',
-                    '7 - 14',
-                    '1 - 7',
-                    '0 Minuten'
+                    'Für eine sehr lange Dauer',
+                    'Für längere Zeit',
+                    'Nicht besonders lange',
+                    'Eher kurz',
+                    'Sehr kurz'
                 ]
             }
         ]
@@ -83,7 +83,7 @@ var surveyQuestions = [
             },
             {
                 id: 3030,
-                text: '“Letzte Woche habe ich die App lange genutzt.“',
+                text: '“Letzte Woche habe ich die App für eine lange Dauer genutzt.“',
                 options: likertScale
             }
         ]
@@ -127,6 +127,28 @@ module.exports = {
             chosenSurvey.disclaimer3 = "Alle Angaben werden verschlüsselt und anonymisiert übertragen und in keinem Fall an Dritte weitergegeben.";
             chosenSurvey.title = 'Mini-Umfrage';
             chosenSurvey.description = 'Umfrage abgeschlossen ?';
+
+            chosenSurvey.questions.push({
+                id: parseInt(chosenSurvey.id + '002'),
+                text: '“Ich finde die App im Alltag nützlich”',
+                options: likertScale
+            });
+            chosenSurvey.questions.push({
+                id: parseInt(chosenSurvey.id + '003'),
+                text: '“Die App ist einfach zu bedienen”',
+                options: likertScale
+            });
+            chosenSurvey.questions.push({
+                id: parseInt(chosenSurvey.id + '001'),
+                text: 'Alter',
+                options: ['16 - 20 Jahre',
+                    '21 – 23 Jahre',
+                    '24 - 28 Jahre',
+                    '29 - 35 Jahre',
+                    '36 - 45 Jahre',
+                    '45 - 60 Jahre',
+                    '60 – 99 Jahre']
+            });
         }
         cb(null, chosenSurvey);
     }
