@@ -57,7 +57,7 @@
     "cordova-plugin-crosswalk-webview"
   ],
   "cordovaPlatforms": [
-    "ios",
-    "android"
+    "android",
+    "ios"
   ]
 }

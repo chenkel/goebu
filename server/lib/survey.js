@@ -27,6 +27,28 @@ var surveyQuestions = [
                 id: 1030,
                 text: 'Wie viele Minuten haben Sie die App letzte Woche insgesamt genutzt?',
                 options: []
+            },
+            {
+                id: 10002,
+                text: '“Ich finde die App im Alltag nützlich”',
+                options: likertScale
+            },
+            {
+                id: 10003,
+                text: '“Die App ist einfach zu bedienen”',
+                options: likertScale
+            },
+            {
+
+                id: 10001,
+                text: 'Alter',
+                options: ['16 - 20 Jahre',
+                    '21 – 23 Jahre',
+                    '24 - 28 Jahre',
+                    '29 - 35 Jahre',
+                    '36 - 45 Jahre',
+                    '45 - 60 Jahre',
+                    '60 – 99 Jahre']
             }
         ]
     },
@@ -65,6 +87,28 @@ var surveyQuestions = [
                     'Eher kurz',
                     'Sehr kurz'
                 ]
+            },
+            {
+                id: 20002,
+                text: '“Ich finde die App im Alltag nützlich”',
+                options: likertScale
+            },
+            {
+                id: 20003,
+                text: '“Die App ist einfach zu bedienen”',
+                options: likertScale
+            },
+            {
+
+                id: 20001,
+                text: 'Alter',
+                options: ['16 - 20 Jahre',
+                    '21 – 23 Jahre',
+                    '24 - 28 Jahre',
+                    '29 - 35 Jahre',
+                    '36 - 45 Jahre',
+                    '45 - 60 Jahre',
+                    '60 – 99 Jahre']
             }
         ]
     },
@@ -85,6 +129,28 @@ var surveyQuestions = [
                 id: 3030,
                 text: '“Letzte Woche habe ich die App für eine lange Dauer genutzt.“',
                 options: likertScale
+            },
+            {
+                id: 30002,
+                text: '“Ich finde die App im Alltag nützlich”',
+                options: likertScale
+            },
+            {
+                id: 30003,
+                text: '“Die App ist einfach zu bedienen”',
+                options: likertScale
+            },
+            {
+
+                id: 30001,
+                text: 'Alter',
+                options: ['16 - 20 Jahre',
+                    '21 – 23 Jahre',
+                    '24 - 28 Jahre',
+                    '29 - 35 Jahre',
+                    '36 - 45 Jahre',
+                    '45 - 60 Jahre',
+                    '60 – 99 Jahre']
             }
         ]
     }
@@ -104,7 +170,6 @@ module.exports = {
             surveyWeek = 3;
         }
         //console.log(group_id, "<-- group_id");
-
 
         //var surveyPlan = {
         //    1: [0, 1, 2, 3],
@@ -128,27 +193,6 @@ module.exports = {
             chosenSurvey.title = 'Mini-Umfrage';
             chosenSurvey.description = 'Umfrage abgeschlossen ?';
 
-            chosenSurvey.questions.push({
-                id: parseInt(chosenSurvey.id + '002'),
-                text: '“Ich finde die App im Alltag nützlich”',
-                options: likertScale
-            });
-            chosenSurvey.questions.push({
-                id: parseInt(chosenSurvey.id + '003'),
-                text: '“Die App ist einfach zu bedienen”',
-                options: likertScale
-            });
-            chosenSurvey.questions.push({
-                id: parseInt(chosenSurvey.id + '001'),
-                text: 'Alter',
-                options: ['16 - 20 Jahre',
-                    '21 – 23 Jahre',
-                    '24 - 28 Jahre',
-                    '29 - 35 Jahre',
-                    '36 - 45 Jahre',
-                    '45 - 60 Jahre',
-                    '60 – 99 Jahre']
-            });
         }
         cb(null, chosenSurvey);
     }
