@@ -49,7 +49,6 @@
     "cordova-plugin-google-analytics",
     "nl.x-services.plugins.actionsheet",
     "nl.x-services.plugins.toast",
-    "com.ionic.keyboard",
     {
       "locator": "https://github.com/driftyco/ionic-plugins-deploy",
       "id": "com.ionic.deploy"

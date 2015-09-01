@@ -87,29 +87,30 @@ var surveyQuestions = [
                     'Eher kurz',
                     'Sehr kurz'
                 ]
-            },
-            {
-                id: 20002,
-                text: '“Ich finde die App im Alltag nützlich”',
-                options: likertScale
-            },
-            {
-                id: 20003,
-                text: '“Die App ist einfach zu bedienen”',
-                options: likertScale
-            },
-            {
-
-                id: 20001,
-                text: 'Alter',
-                options: ['16 - 20 Jahre',
-                    '21 – 23 Jahre',
-                    '24 - 28 Jahre',
-                    '29 - 35 Jahre',
-                    '36 - 45 Jahre',
-                    '45 - 60 Jahre',
-                    '60 – 99 Jahre']
             }
+            //,
+            //{
+            //    id: 20002,
+            //    text: '“Ich finde die App im Alltag nützlich”',
+            //    options: likertScale
+            //},
+            //{
+            //    id: 20003,
+            //    text: '“Die App ist einfach zu bedienen”',
+            //    options: likertScale
+            //},
+            //{
+            //
+            //    id: 20001,
+            //    text: 'Alter',
+            //    options: ['16 - 20 Jahre',
+            //        '21 – 23 Jahre',
+            //        '24 - 28 Jahre',
+            //        '29 - 35 Jahre',
+            //        '36 - 45 Jahre',
+            //        '45 - 60 Jahre',
+            //        '60 – 99 Jahre']
+            //}
         ]
     },
     {
@@ -153,7 +154,78 @@ var surveyQuestions = [
                     '60 – 99 Jahre']
             }
         ]
+    },
+
+    {
+        id: 40,
+        questions: [
+            {
+                id: 41010,
+                text: 'Wie oft haben Sie die App in den letzten 4 Wochen geöffnet?',
+                options: []
+            },
+            {
+                id: 41020,
+                text: 'Wie viele Routen haben Sie in den letzten 4 Wochen nachgeschaut?', options: []
+            },
+            {
+                id: 41030,
+                text: 'Wie viele Minuten haben Sie die App in den letzten 4 Wochen insgesamt genutzt?',
+                options: []
+            },
+
+            {
+                id: 42010,
+                text: 'Wie oft haben Sie die App in den letzten 4 Wochen geöffnet?',
+                options: [
+                    'Mehr als einmal täglich',
+                    'Einmal pro Tag',
+                    'Mehrmals pro Woche',
+                    'Einmal pro Woche',
+                    'Niemals'
+                ]
+            },
+            {
+                id: 42020,
+                text: 'Wie häufig haben Sie Routen in in den letzten 4 Wochen nachgeschaut?',
+                options: [
+                    'Mehr als einmal täglich',
+                    'Einmal pro Tag',
+                    'Mehrmals pro Woche',
+                    'Einmal pro Woche',
+                    'Niemals'
+                ]
+            },
+            {
+                id: 42030,
+                text: 'Wie lang haben Sie die App in den letzten 4 Wochen insgesamt genutzt?',
+                options: [
+                    'Für eine sehr lange Dauer',
+                    'Für längere Zeit',
+                    'Nicht besonders lange',
+                    'Eher kurz',
+                    'Sehr kurz'
+                ]
+            },
+            {
+                id: 43010,
+                text: '“In den letzten 4 Wochen habe ich die App jeden Tag benutzt.”',
+                options: likertScale
+            },
+            {
+                id: 43020,
+                text: '“In den letzten 4 Wochen habe ich viele Busrouten nachgeschaut.”',
+                options: likertScale
+            },
+
+            {
+                id: 43030,
+                text: '“In den letzten 4 Wochen habe ich die App für eine lange Dauer genutzt.“',
+                options: likertScale
+            }
+        ]
     }
+
 ];
 
 module.exports = {
@@ -166,8 +238,8 @@ module.exports = {
         var surveyWeek = Math.floor(daysSince / 7);
         console.log(surveyWeek, "<-- surveyWeek");
 
-        if (surveyWeek > 3) {
-            surveyWeek = 3;
+        if (surveyWeek > 4) {
+            surveyWeek = 4;
         }
         //console.log(group_id, "<-- group_id");
 
@@ -178,9 +250,9 @@ module.exports = {
         //};
 
         var surveyPlan = {
-            1: [0, 1, 2, 3],
-            2: [0, 2, 1, 3],
-            3: [0, 3, 2, 1]
+            1: [0, 1, 2, 3, 4],
+            2: [0, 2, 1, 3, 4],
+            3: [0, 3, 2, 1, 4]
         };
         //console.log(surveyPlan[group_id][surveyWeek], "<-- surveyPlan[group_id][surveyWeek]");
         //console.log(surveyQuestions[2], "<-- surveyQuestions");
@@ -189,9 +261,13 @@ module.exports = {
         if (chosenSurvey.hasOwnProperty('id')) {
             chosenSurvey.disclaimer1 = "Die Umfrage wird im Rahmen eines Forschungsprojekts der Universität Göttingen durchgeführt.";
             chosenSurvey.disclaimer2 = "Persönliche Daten werden weder abgefragt noch gespeichert.";
-            chosenSurvey.disclaimer3 = "Alle Angaben werden verschlüsselt und anonymisiert übertragen und in keinem Fall an Dritte weitergegeben.";
+            chosenSurvey.disclaimer3 = "Alle Angaben werden verschlüsselt und anonymisiert übertragen und in keinem Fall an Dritte weitergegeben. Vielen Dank für Ihre Teilnahme.";
             chosenSurvey.title = 'Mini-Umfrage';
             chosenSurvey.description = 'Umfrage abgeschlossen ?';
+            if (chosenSurvey.id === 40) {
+                chosenSurvey.title = 'Die finale Umfrage';
+                chosenSurvey.disclaimer1 = "! Dies ist die letzte Umfrage für Sie ! Die Umfrage wird im Rahmen eines Forschungsprojekts der Universität Göttingen durchgeführt.";
+            }
 
         }
         cb(null, chosenSurvey);

@@ -1,6 +1,6 @@
 "use strict";
-//var host = "http://127.0.0.1:3000/";
-var host = "http://goebu.christopherhenkel.de:3000/";
+var host = "http://192.168.178.45:3000/";
+//var host = "http://goebu.christopherhenkel.de:3000/";
 
 angular.module("goebu.services")
     .factory('busRadar', function ($http) {
