@@ -1,6 +1,5 @@
 "use strict";
 angular.module('goebu.services')
-
     .factory('$localstorage', ['$window', function ($window) {
         return {
             set: function (key, value) {

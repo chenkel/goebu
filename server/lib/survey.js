@@ -42,7 +42,8 @@ var surveyQuestions = [
 
                 id: 10001,
                 text: 'Alter',
-                options: ['16 - 20 Jahre',
+                options: [
+                    '16 - 20 Jahre',
                     '21 – 23 Jahre',
                     '24 - 28 Jahre',
                     '29 - 35 Jahre',
@@ -88,29 +89,29 @@ var surveyQuestions = [
                     'Sehr kurz'
                 ]
             }
-            //,
-            //{
-            //    id: 20002,
-            //    text: '“Ich finde die App im Alltag nützlich”',
-            //    options: likertScale
-            //},
-            //{
-            //    id: 20003,
-            //    text: '“Die App ist einfach zu bedienen”',
-            //    options: likertScale
-            //},
-            //{
-            //
-            //    id: 20001,
-            //    text: 'Alter',
-            //    options: ['16 - 20 Jahre',
-            //        '21 – 23 Jahre',
-            //        '24 - 28 Jahre',
-            //        '29 - 35 Jahre',
-            //        '36 - 45 Jahre',
-            //        '45 - 60 Jahre',
-            //        '60 – 99 Jahre']
-            //}
+            ,
+            {
+                id: 20002,
+                text: '“Ich finde die App im Alltag nützlich”',
+                options: likertScale
+            },
+            {
+                id: 20003,
+                text: '“Die App ist einfach zu bedienen”',
+                options: likertScale
+            },
+            {
+
+                id: 20001,
+                text: 'Alter',
+                options: ['16 - 20 Jahre',
+                    '21 – 23 Jahre',
+                    '24 - 28 Jahre',
+                    '29 - 35 Jahre',
+                    '36 - 45 Jahre',
+                    '45 - 60 Jahre',
+                    '60 – 99 Jahre']
+            }
         ]
     },
     {
@@ -250,9 +251,12 @@ module.exports = {
         //};
 
         var surveyPlan = {
-            1: [0, 1, 2, 3, 4],
-            2: [0, 2, 1, 3, 4],
-            3: [0, 3, 2, 1, 4]
+            //1: [0, 1, 2, 3, 4],
+            //2: [0, 2, 1, 3, 4],
+            //3: [0, 3, 2, 1, 4]
+            1: [0, 0, 0, 0, 0],
+            2: [0, 0, 0, 0, 0],
+            3: [0, 0, 0, 0, 0]
         };
         //console.log(surveyPlan[group_id][surveyWeek], "<-- surveyPlan[group_id][surveyWeek]");
         //console.log(surveyQuestions[2], "<-- surveyQuestions");

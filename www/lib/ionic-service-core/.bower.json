@@ -1,6 +1,6 @@
 {
   "name": "ionic-service-core",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "homepage": "http://ionic.io",
   "authors": [
     "Eric Bobbitt <eric@drifty.com",
@@ -17,11 +17,11 @@
     "test",
     "tests"
   ],
-  "_release": "0.1.9",
+  "_release": "0.1.10",
   "_resolution": {
     "type": "version",
-    "tag": "v0.1.9",
-    "commit": "3fa4ab378c7a37216b4657a357dd3285d87ebbd3"
+    "tag": "v0.1.10",
+    "commit": "6525e1235858244c6473f5074a124891350853dc"
   },
   "_source": "git://github.com/driftyco/ionic-service-core.git",
   "_target": ">= 0.1.9",

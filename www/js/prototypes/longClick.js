@@ -14,19 +14,16 @@ function LongClick(map, maxTime) {
         me.onMapDrag_(e);
     });
 }
-
 LongClick.prototype.onMouseUp_ = function (e) {
     var now = +new Date();
     if (now - this.downTime > this.maxTime && this.isDragging === false) {
         google.maps.event.trigger(this.map, 'longPress', e);
     }
 };
-
 LongClick.prototype.onMouseDown_ = function () {
     this.downTime = +new Date();
     this.isDragging = false;
 };
-
 LongClick.prototype.onMapDrag_ = function () {
     this.isDragging = true;
 };

@@ -3,19 +3,21 @@
   "version": "1.0.0",
   "description": "goebu: An Ionic project",
   "dependencies": {
-    "bunyan": "^1.4.0",
-    "express-bunyan-logger": "^1.1.1",
+    "bunyan": "^1.5.1",
+    "express-bunyan-logger": "^1.2.0",
     "gulp": "^3.9.0",
     "gulp-concat": "^2.6.0",
-    "gulp-minify-css": "^1.2.0",
+    "gulp-minify-css": "^1.2.2",
     "gulp-rename": "^1.2.2",
-    "gulp-sass": "^2.0.4",
-    "newrelic": "^1.21.1"
+    "gulp-sass": "^2.1.1",
+    "newrelic": "^1.24.0"
   },
   "devDependencies": {
-    "bower": "^1.4.1",
-    "gulp-util": "^3.0.6",
-    "shelljs": "^0.5.1"
+    "bower": "^1.7.1",
+    "gulp-sass": "^2.1.1",
+    "gulp-tsc": "^1.1.4",
+    "gulp-util": "^3.0.7",
+    "shelljs": "^0.5.3"
   },
   "repository": {
     "type": "git",
